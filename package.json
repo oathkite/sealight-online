@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel --filter @sealight/client --filter @sealight/api dev",
     "test": "pnpm -r test",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "deploy:web": "pnpm -C apps/api run deploy"
   }
 }

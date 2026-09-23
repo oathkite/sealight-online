@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "wrangler dev --var LAMP_DURATION_MS:30000",
     "dev:real": "wrangler dev",
+    "dev:full": "pnpm -C ../client build && wrangler dev --var LAMP_DURATION_MS:30000",
+    "deploy": "pnpm -C ../client build && wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "cf-typegen": "wrangler types"

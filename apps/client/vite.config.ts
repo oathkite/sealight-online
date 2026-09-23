@@ -9,5 +9,11 @@ export default defineConfig({
   },
   // Tauri / Capacitor から読み込むため相対パスで出力する
   base: "./",
-  server: { host: true, port: 5173, strictPort: true },
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
+    // API（wrangler dev）への要求を中継し、本番と同じく同一オリジンで呼べるようにする
+    proxy: { "^/me(/|$)": "http://localhost:8787" },
+  },
 });

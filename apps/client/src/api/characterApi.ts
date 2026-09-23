@@ -1,7 +1,9 @@
 import type { CharacterState, Decision, ShopSku, Slot, StatKey, Tactics } from "@sealight/sim";
 import { characterSchema, errorSchema } from "./schema";
 
-const API_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
+// 本番は画面と API を同じ Worker から配信するので相対パスで呼ぶ。
+// 開発中は Vite が /me を wrangler dev に中継する。別の場所の API を使うときだけ VITE_API_URL を指定する
+const API_URL: string = import.meta.env.VITE_API_URL ?? "";
 
 export type ApiResult = { readonly ok: true; readonly value: CharacterState } | { readonly ok: false; readonly error: string };
 
