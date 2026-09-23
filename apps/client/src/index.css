@@ -1,0 +1,80 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #1b1a2e;
+  overflow: hidden;
+}
+
+body {
+  font-family: system-ui, "Hiragino Sans", sans-serif;
+  color: #f4e9d8;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+}
+
+.hud {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.35);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.hud-fps {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.lamp-panel {
+  position: absolute;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 240px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.45);
+  font-size: 14px;
+  text-align: center;
+}
+
+.lamp-panel button {
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd27a;
+  color: #2a2440;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lamp-countdown {
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ffd27a;
+}
+
+.lamp-error {
+  color: #ff9a8a;
+}
