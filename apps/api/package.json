@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "dev:short": "wrangler dev --var LAMP_DURATION_MS:30000",
+    "dev": "wrangler dev --var LAMP_DURATION_MS:30000",
+    "dev:real": "wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "cf-typegen": "wrangler types"
