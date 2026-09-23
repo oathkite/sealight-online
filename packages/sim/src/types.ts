@@ -11,22 +11,6 @@ export type Maze = {
   readonly start: Point;
   readonly stairs: Point;
   readonly treasures: readonly Point[];
-};
-
-export type LampEvent =
-  | { readonly type: "move"; readonly to: Point }
-  | { readonly type: "treasure"; readonly at: Point }
-  | { readonly type: "stairs"; readonly at: Point };
-
-export type LampInput = {
-  readonly seed: number;
-  readonly width: number;
-  readonly height: number;
-  readonly treasureCount?: number;
-};
-
-export type LampResult = {
-  readonly input: LampInput;
-  readonly maze: Maze;
-  readonly events: readonly LampEvent[];
+  /** モンスターのいるマス。種類は探索時に決まる */
+  readonly monsters: readonly Point[];
 };

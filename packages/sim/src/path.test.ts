@@ -10,6 +10,7 @@ const fromAscii = (rows: readonly string[]): Maze => ({
   start: { x: 1, y: 1 },
   stairs: { x: 1, y: 1 },
   treasures: [],
+  monsters: [],
 });
 
 describe("findPath", () => {

@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`simulateLamp > 特定のシードの結果が変わらない（乱数の消費順が変わったら検知する） 1`] = `
+{
+  "eventCount": 115,
+  "outcome": {
+    "gold": 16,
+    "hp": 40,
+    "items": [],
+    "potions": 2,
+    "status": "survived",
+    "xp": 16,
+  },
+}
+`;

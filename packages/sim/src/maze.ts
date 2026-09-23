@@ -7,9 +7,16 @@ export type MazeOptions = {
   /** 5 以上の奇数 */
   readonly height: number;
   readonly treasureCount?: number;
+  readonly monsterCount?: number;
 };
 
 const DEFAULT_TREASURE_COUNT = 3;
+
+const assertCount = (label: string, value: number): void => {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new RangeError(`${label} must be a non-negative integer: ${value}`);
+  }
+};
 
 const STEPS: readonly Point[] = [
   { x: 0, y: -2 },
@@ -82,10 +89,13 @@ export const generateMaze = (options: MazeOptions, rng: Rng): Maze => {
   const [stairs, ...rest] = candidates;
   if (!stairs) throw new RangeError("maze has no room for stairs");
 
-  const requested = options.treasureCount ?? DEFAULT_TREASURE_COUNT;
-  if (!Number.isInteger(requested) || requested < 0) {
-    throw new RangeError(`treasureCount must be a non-negative integer: ${requested}`);
-  }
-  const treasureCount = Math.min(requested, rest.length);
-  return { width, height, cells, start, stairs, treasures: rest.slice(0, treasureCount) };
+  const requestedTreasures = options.treasureCount ?? DEFAULT_TREASURE_COUNT;
+  const requestedMonsters = options.monsterCount ?? 0;
+  assertCount("treasureCount", requestedTreasures);
+  assertCount("monsterCount", requestedMonsters);
+
+  const treasureCount = Math.min(requestedTreasures, rest.length);
+  const treasures = rest.slice(0, treasureCount);
+  const monsters = rest.slice(treasureCount, treasureCount + requestedMonsters);
+  return { width, height, cells, start, stairs, treasures, monsters };
 };
