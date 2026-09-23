@@ -1,66 +1,180 @@
 import { env, exports } from "cloudflare:workers";
-import { runDurableObjectAlarm } from "cloudflare:test";
+import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { simulateLamp, STANDARD_FLOOR } from "@sealight/sim";
+import { completeLamp, type CharacterState } from "@sealight/sim";
 
-const request = (path: string, init?: RequestInit): Promise<Response> =>
-  exports.default.fetch(new Request(`https://api.test${path}`, init));
+type Body = Record<string, unknown>;
 
-const startLamp = (body: unknown): Promise<Response> =>
-  request("/lamps", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+const client = (id: string = crypto.randomUUID()) => {
+  const call = async (method: string, path: string, body?: Body) => {
+    const res = await exports.default.fetch(
+      new Request(`https://api.test${path}`, {
+        method,
+        headers: { "x-character-id": id, "content-type": "application/json" },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      }),
+    );
+    return { status: res.status, json: (await res.json()) as CharacterState & { error?: string } };
+  };
+  const stub = () => env.CHARACTER.get(env.CHARACTER.idFromName(id));
+  return { id, call, stub };
+};
 
-type Started = { readonly id: string; readonly status: string; readonly seed: number; readonly endsAt: number; readonly startedAt: number };
+/** 灯を始めてアラームを発火させ、結果を反映させる */
+const runLamp = async (c: ReturnType<typeof client>) => {
+  const started = await c.call("POST", "/me/lamp");
+  expect(started.status).toBe(200);
+  expect(await runDurableObjectAlarm(c.stub())).toBe(true);
+  return c.call("GET", "/me");
+};
 
-describe("POST /lamps", () => {
-  it("灯を開始し、終了予定時刻を返す", async () => {
-    const res = await startLamp({ seed: 42 });
-    expect(res.status).toBe(201);
-    const body = await res.json<Started>();
-    expect(body.status).toBe("running");
-    expect(body.seed).toBe(42);
-    expect(body.endsAt - body.startedAt).toBe(Number(env.LAMP_DURATION_MS));
+/** 強いキャラにして、必ず生き残るようにする */
+const makeStrong = (c: ReturnType<typeof client>) =>
+  runInDurableObject(c.stub(), async (_, state) => {
+    const current = await state.storage.get<CharacterState>("state");
+    if (!current) throw new Error("character not created");
+    await state.storage.put("state", { ...current, stats: { str: 30, vit: 30, luk: 0 }, hp: 200 });
   });
 
-  it("シードを省略するとサーバーが決める", async () => {
-    const body = await (await startLamp({})).json<Started>();
-    expect(Number.isInteger(body.seed)).toBe(true);
-  });
-
-  it("不正なシードは 400 を返す", async () => {
-    expect((await startLamp({ seed: -1 })).status).toBe(400);
-    expect((await startLamp({ seed: 1.5 })).status).toBe(400);
-    expect((await startLamp({ seed: "abc" })).status).toBe(400);
-  });
-
-  it("JSON でない本文は 400 を返す", async () => {
-    const res = await request("/lamps", { method: "POST", body: "not json" });
+describe("認証の代わりのキャラ ID", () => {
+  it("ヘッダーがなければ 400", async () => {
+    const res = await exports.default.fetch(new Request("https://api.test/me"));
     expect(res.status).toBe(400);
+  });
+
+  it("UUID でなければ 400", async () => {
+    expect((await client("not-a-uuid").call("GET", "/me")).status).toBe(400);
   });
 });
 
-describe("GET /lamps/:id", () => {
-  it("終了前は running を返す", async () => {
-    const { id } = await (await startLamp({ seed: 7 })).json<Started>();
-    const body = await (await request(`/lamps/${id}`)).json<{ status: string }>();
-    expect(body.status).toBe("running");
+describe("GET /me", () => {
+  it("初回は新しいキャラを作って街にいる", async () => {
+    const { status, json } = await client().call("GET", "/me");
+    expect(status).toBe(200);
+    expect(json.phase).toEqual({ type: "town" });
+    expect(json.level).toBe(1);
+  });
+});
+
+describe("灯", () => {
+  it("開始すると探索中になり、終了時刻が決まる", async () => {
+    const { json } = await client().call("POST", "/me/lamp");
+    expect(json.phase.type).toBe("exploring");
+    if (json.phase.type === "exploring") {
+      expect(json.phase.endsAt - json.phase.startedAt).toBe(Number(env.LAMP_DURATION_MS));
+    }
   });
 
-  it("アラーム後は、同じシードをローカルで計算した結果と完全に一致する", async () => {
-    const { id } = await (await startLamp({ seed: 1234 })).json<Started>();
-    const ran = await runDurableObjectAlarm(env.LAMP_TIMER.get(env.LAMP_TIMER.idFromName(id)));
-    expect(ran).toBe(true);
-
-    const body = await (await request(`/lamps/${id}`)).json<{ status: string; result: unknown }>();
-    expect(body.status).toBe("done");
-    expect(body.result).toEqual(simulateLamp({ seed: 1234, ...STANDARD_FLOOR }));
+  it("探索中にもう一度始めると 409", async () => {
+    const c = client();
+    await c.call("POST", "/me/lamp");
+    const again = await c.call("POST", "/me/lamp");
+    expect(again.status).toBe(409);
+    expect(again.json.error).toBe("not_ready");
   });
 
-  it("存在しない灯は 404 を返す", async () => {
-    const res = await request(`/lamps/${crypto.randomUUID()}`);
-    expect(res.status).toBe(404);
+  it("アラームで結果が確定し、sim で同じ状態から計算した結果と一致する", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    await makeStrong(c);
+    const started = await c.call("POST", "/me/lamp");
+    await runDurableObjectAlarm(c.stub());
+    const { json } = await c.call("GET", "/me");
+
+    const expected = completeLamp(started.json);
+    expect(expected.ok && json).toEqual(expected.ok ? expected.value : null);
+    expect(json.phase).toEqual({ type: "camp", depth: 1 });
   });
 
-  it("UUID でない ID は 400 を返す", async () => {
-    expect((await request("/lamps/not-a-uuid")).status).toBe(400);
+  it("探索中に判断すると 409", async () => {
+    const c = client();
+    await c.call("POST", "/me/lamp");
+    const res = await c.call("POST", "/me/decide", { decision: "descend" });
+    expect(res.status).toBe(409);
+    expect(res.json.error).toBe("not_in_camp");
+  });
+});
+
+describe("POST /me/decide", () => {
+  it("帰還すると持ち物が倉庫に移る", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    await makeStrong(c);
+    const camp = (await runLamp(c)).json;
+    const { json } = await c.call("POST", "/me/decide", { decision: "return" });
+    expect(json.phase).toEqual({ type: "town" });
+    expect(json.stash).toEqual([...camp.stash, ...camp.bag.items]);
+  });
+
+  it("降りると次の深さで待つ", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    await makeStrong(c);
+    await runLamp(c);
+    const { json } = await c.call("POST", "/me/decide", { decision: "descend" });
+    expect(json.phase).toEqual({ type: "ready", depth: 2 });
+  });
+
+  it("不正な判断は 400", async () => {
+    expect((await client().call("POST", "/me/decide", { decision: "fly" })).status).toBe(400);
+  });
+});
+
+describe("街での行動", () => {
+  it("ステータスを割り振れる", async () => {
+    const { json } = await client().call("POST", "/me/stats", { stat: "str" });
+    expect(json.stats.str).toBe(3);
+  });
+
+  it("ポーションを買える", async () => {
+    const { json } = await client().call("POST", "/me/buy", { sku: "potion" });
+    expect(json.potions).toBe(3);
+  });
+
+  it("装備を買うと一意な ID で倉庫に入り、身につけられる", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    await runInDurableObject(c.stub(), async (_, state) => {
+      const current = await state.storage.get<CharacterState>("state");
+      if (current) await state.storage.put("state", { ...current, gold: 500 });
+    });
+    const bought = (await c.call("POST", "/me/buy", { sku: "iron-sword" })).json;
+    const item = bought.stash.at(-1);
+    expect(item?.name).toBe("鉄の剣");
+    const equipped = (await c.call("POST", "/me/equip", { itemId: item?.id })).json;
+    expect(equipped.equipment.weapon?.id).toBe(item?.id);
+  });
+
+  it("存在しない商品は 400", async () => {
+    expect((await client().call("POST", "/me/buy", { sku: "dragon" })).status).toBe(400);
+  });
+
+  it("お金が足りなければ 409", async () => {
+    const res = await client().call("POST", "/me/buy", { sku: "steel-sword" });
+    expect(res.status).toBe(409);
+    expect(res.json.error).toBe("not_enough_gold");
+  });
+
+  it("作戦を変えられる。範囲外の値は 400", async () => {
+    const c = client();
+    const { json } = await c.call("PUT", "/me/tactics", { potionThreshold: 50, priority: "treasure" });
+    expect(json.tactics).toEqual({ potionThreshold: 50, priority: "treasure" });
+    expect((await c.call("PUT", "/me/tactics", { potionThreshold: 101, priority: "treasure" })).status).toBe(400);
+  });
+});
+
+describe("アラームの遅れへの備え", () => {
+  it("終了時刻を過ぎていれば、取得時にその場で結果を確定する", async () => {
+    const c = client();
+    await c.call("POST", "/me/lamp");
+    await runInDurableObject(c.stub(), async (_, state) => {
+      const current = await state.storage.get<CharacterState>("state");
+      if (current?.phase.type === "exploring") {
+        await state.storage.put("state", { ...current, phase: { ...current.phase, endsAt: Date.now() - 1 } });
+      }
+    });
+    const { json } = await c.call("GET", "/me");
+    expect(json.phase.type).not.toBe("exploring");
+    expect(json.lastLamp).not.toBeNull();
   });
 });

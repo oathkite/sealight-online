@@ -4,9 +4,9 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-15",
   "durable_objects": {
-    "bindings": [{ "name": "LAMP_TIMER", "class_name": "LampTimer" }]
+    "bindings": [{ "name": "CHARACTER", "class_name": "Character" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["LampTimer"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Character"] }],
   "vars": {
     // 1灯 = 25分。ローカル確認では `pnpm dev:short` で 30 秒に短縮する
     "LAMP_DURATION_MS": "1500000"

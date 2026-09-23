@@ -1,5 +1,5 @@
 import { app } from "./app";
 
-export { LampTimer } from "./lamp-timer";
+export { Character } from "./character";
 
 export default app satisfies ExportedHandler<Env>;
