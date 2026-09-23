@@ -4,8 +4,8 @@ import type { LampResult, Tactics } from "./lamp";
 
 /**
  * キャラの居場所と進行状況。
- * town → exploring（灯の間）→ camp（休憩中の判断待ち）→ ready（次の灯を待つ）→ exploring …
- * 倒れるか帰還すると town に戻る。
+ * town → exploring（25 分の探索）→ camp（階段で次の行動を待つ）→ exploring …
+ * 進む・留まるを選ぶとその場で次の探索が始まる。倒れるか帰還すると town に戻る。
  */
 export type Phase =
   | { readonly type: "town" }
@@ -16,8 +16,7 @@ export type Phase =
       readonly startedAt: number;
       readonly endsAt: number;
     }
-  | { readonly type: "camp"; readonly depth: number }
-  | { readonly type: "ready"; readonly depth: number };
+  | { readonly type: "camp"; readonly depth: number };
 
 export type CharacterState = {
   readonly level: number;

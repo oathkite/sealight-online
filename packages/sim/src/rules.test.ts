@@ -25,7 +25,7 @@ const sword: Equipment = { id: "s1", slot: "weapon", name: "鉄の剣", rarity: 
 
 const withStash = (items: readonly Equipment[]): CharacterState => ({ ...createCharacter(), stash: items });
 
-/** 生き残る灯を 1 回こなしてキャンプ状態にする */
+/** 生き残る探索を 1 回こなしてキャンプ状態にする */
 const survivedOnce = (): CharacterState => {
   const strong = { ...createCharacter(), stats: { str: 20, vit: 20, luk: 0 } };
   const started = ok(startLamp({ ...strong, hp: maxHpOf(strong) }, LAMP));
@@ -38,10 +38,10 @@ describe("startLamp", () => {
     expect(state.phase).toEqual({ type: "exploring", depth: 1, seed: 1, startedAt: 1_000, endsAt: 1_501_000 });
   });
 
-  it("探索中やキャンプ中は始められない", () => {
+  it("街以外からは始められない（キャンプからは decide で続ける）", () => {
     const exploring = ok(startLamp(createCharacter(), LAMP));
-    expect(startLamp(exploring, LAMP)).toEqual({ ok: false, error: "not_ready" });
-    expect(startLamp(survivedOnce(), LAMP)).toEqual({ ok: false, error: "not_ready" });
+    expect(startLamp(exploring, LAMP)).toEqual({ ok: false, error: "not_in_town" });
+    expect(startLamp(survivedOnce(), LAMP)).toEqual({ ok: false, error: "not_in_town" });
   });
 });
 
@@ -106,17 +106,24 @@ describe("completeLamp", () => {
 });
 
 describe("decide", () => {
-  it("降りると次は 1 つ下の階", () => {
-    expect(ok(decide(survivedOnce(), "descend")).phase).toEqual({ type: "ready", depth: 2 });
+  it("進むと、その場で 1 つ下の階の探索が始まる", () => {
+    expect(ok(decide(survivedOnce(), "descend", LAMP)).phase).toEqual({
+      type: "exploring",
+      depth: 2,
+      seed: 1,
+      startedAt: 1_000,
+      endsAt: 1_501_000,
+    });
   });
 
-  it("留まると同じ階をもう一度", () => {
-    expect(ok(decide(survivedOnce(), "stay")).phase).toEqual({ type: "ready", depth: 1 });
+  it("留まると、その場で同じ階をもう一度探索する", () => {
+    const state = ok(decide(survivedOnce(), "stay", LAMP));
+    expect(state.phase.type === "exploring" && state.phase.depth).toBe(1);
   });
 
   it("帰還すると持ち物が倉庫とお金に移り、HP が全快する", () => {
     const camp = survivedOnce();
-    const state = ok(decide(camp, "return"));
+    const state = ok(decide(camp, "return", LAMP));
     expect(state.phase).toEqual({ type: "town" });
     expect(state.bag).toEqual({ items: [], gold: 0 });
     expect(state.stash).toEqual([...camp.stash, ...camp.bag.items]);
@@ -124,14 +131,13 @@ describe("decide", () => {
     expect(state.hp).toBe(maxHpOf(state));
   });
 
-  it("降りた先から灯を始めると、その深さを探索する", () => {
-    const ready = ok(decide(survivedOnce(), "descend"));
-    const state = ok(startLamp(ready, LAMP));
-    expect(state.phase.type === "exploring" && state.phase.depth).toBe(2);
+  it("進んでも持ち物はそのまま（持ち帰るまでは失う危険がある）", () => {
+    const camp = survivedOnce();
+    expect(ok(decide(camp, "descend", LAMP)).bag).toEqual(camp.bag);
   });
 
   it("キャンプ中でなければ判断できない", () => {
-    expect(decide(createCharacter(), "descend")).toEqual({ ok: false, error: "not_in_camp" });
+    expect(decide(createCharacter(), "descend", LAMP)).toEqual({ ok: false, error: "not_in_camp" });
   });
 });
 

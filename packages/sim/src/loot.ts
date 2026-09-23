@@ -5,7 +5,7 @@ import type { Rng } from "./rng";
 export type LootContext = {
   readonly depth: number;
   readonly luck: number;
-  /** 装備に付ける ID。シードとドロップ順から決め、同じ灯の中で一意にする */
+  /** 装備に付ける ID。シードとドロップ順から決め、同じ探索の中で一意にする */
   readonly id: string;
 };
 

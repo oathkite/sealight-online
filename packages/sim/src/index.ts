@@ -30,6 +30,7 @@ export {
   startLamp,
   unequip,
   type Decision,
+  type LampStart,
   type LossPolicy,
   type RuleError,
   type RuleResult,

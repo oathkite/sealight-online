@@ -5,7 +5,6 @@ import { simulateLamp, type LampOutcome, type Tactics } from "./lamp";
 import { failure, success, type Result } from "./result";
 
 export type RuleError =
-  | "not_ready"
   | "not_exploring"
   | "not_in_camp"
   | "not_in_town"
@@ -29,18 +28,16 @@ export type Decision = "descend" | "stay" | "return";
 const POINTS_PER_LEVEL = 3;
 const xpToNext = (level: number): number => level * 10;
 
-export const startLamp = (
-  state: CharacterState,
-  lamp: { readonly seed: number; readonly now: number; readonly durationMs: number },
-): RuleResult => {
-  const { phase } = state;
-  if (phase.type !== "town" && phase.type !== "ready") return failure("not_ready");
-  const depth = phase.type === "town" ? 1 : phase.depth;
-  return success({
-    ...state,
-    phase: { type: "exploring", depth, seed: lamp.seed, startedAt: lamp.now, endsAt: lamp.now + lamp.durationMs },
-  });
-};
+export type LampStart = { readonly seed: number; readonly now: number; readonly durationMs: number };
+
+const exploringAt = (state: CharacterState, depth: number, lamp: LampStart): CharacterState => ({
+  ...state,
+  phase: { type: "exploring", depth, seed: lamp.seed, startedAt: lamp.now, endsAt: lamp.now + lamp.durationMs },
+});
+
+/** 街から地下 1 階の探索に出る */
+export const startLamp = (state: CharacterState, lamp: LampStart): RuleResult =>
+  state.phase.type === "town" ? success(exploringAt(state, 1, lamp)) : failure("not_in_town");
 
 const gainXp = (state: CharacterState, xp: number): CharacterState => {
   let { level, unspentPoints } = state;
@@ -72,7 +69,7 @@ const applySurvival = (state: CharacterState, outcome: LampOutcome, depth: numbe
   bestDepth: Math.max(state.bestDepth, depth),
 });
 
-/** 灯の終了時に呼ぶ。探索をシミュレーションして結果を反映する */
+/** 探索の終了時に呼ぶ。探索をシミュレーションして結果を反映する */
 export const completeLamp = (state: CharacterState, policy: LossPolicy = DEFAULT_LOSS_POLICY): RuleResult => {
   const { phase } = state;
   if (phase.type !== "exploring") return failure("not_exploring");
@@ -97,14 +94,15 @@ export const completeLamp = (state: CharacterState, policy: LossPolicy = DEFAULT
   return success(next);
 };
 
-export const decide = (state: CharacterState, decision: Decision): RuleResult => {
+/** 階段での判断。進む・留まるはその場で次の探索を始め、帰還は持ち物を倉庫に移して街に戻る */
+export const decide = (state: CharacterState, decision: Decision, lamp: LampStart): RuleResult => {
   const { phase } = state;
   if (phase.type !== "camp") return failure("not_in_camp");
   switch (decision) {
     case "descend":
-      return success({ ...state, phase: { type: "ready", depth: phase.depth + 1 } });
+      return success(exploringAt(state, phase.depth + 1, lamp));
     case "stay":
-      return success({ ...state, phase: { type: "ready", depth: phase.depth } });
+      return success(exploringAt(state, phase.depth, lamp));
     case "return":
       return success({
         ...state,

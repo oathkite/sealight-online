@@ -69,7 +69,7 @@ const pickUnvisited = (maze: Maze, from: Point, visited: ReadonlySet<string>, rn
   return options[rng.int(options.length)];
 };
 
-/** 1灯ぶんの探索の途中経過。enter でマスに入るたびに更新する */
+/** 1 回（25 分）ぶんの探索の途中経過。enter でマスに入るたびに更新する */
 const createExpedition = (input: LampInput, maze: Maze, rng: Rng) => {
   const { seed, depth, loadout, tactics } = input;
   // 乱数の消費順を固定するため、モンスターの種類は迷路生成の直後にまとめて決める
@@ -133,7 +133,7 @@ const createExpedition = (input: LampInput, maze: Maze, rng: Rng) => {
 };
 
 /**
- * 1灯ぶんの探索をシミュレーションする。同じ入力なら必ず同じ結果になる。
+ * 1 回（25 分）ぶんの探索をシミュレーションする。同じ入力なら必ず同じ結果になる。
  * キャラは深さ優先で未踏のマスを歩き、行き止まりでは来た道を戻る。
  */
 export const simulateLamp = (input: LampInput): LampResult => {
