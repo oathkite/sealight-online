@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sealight Online</string>
+    <string name="title_activity_main">Sealight Online</string>
+    <string name="package_name">jp.oathkite.sealight</string>
+    <string name="custom_url_scheme">jp.oathkite.sealight</string>
+</resources>
