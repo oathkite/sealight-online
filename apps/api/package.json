@@ -1,0 +1,23 @@
+{
+  "name": "@sealight/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:short": "wrangler dev --var LAMP_DURATION_MS:30000",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@sealight/sim": "workspace:*",
+    "hono": "^4.13.8",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.136.2"
+  }
+}
