@@ -76,13 +76,24 @@ app.use("/me/*", requireCharacterId);
 
 app.get("/me", async (c) => c.json(await stubOf(c).state()));
 
-app.post("/me/lamp", async (c) => {
+const durationOf = (c: Context<AppEnv>): number | null => {
   const duration = durationSchema.safeParse(c.env.LAMP_DURATION_MS);
-  if (!duration.success) return c.json({ error: "server_misconfigured" }, 500);
-  return respond(c, await stubOf(c).startLamp(duration.data));
+  return duration.success ? duration.data : null;
+};
+
+app.post("/me/explore", async (c) => {
+  const duration = durationOf(c);
+  if (duration === null) return c.json({ error: "server_misconfigured" }, 500);
+  return respond(c, await stubOf(c).startLamp(duration));
 });
 
-app.post("/me/decide", actionRoute(actionSchemas.decide, (b) => ({ type: "decide", decision: b.decision })));
+app.post("/me/decide", async (c) => {
+  const duration = durationOf(c);
+  if (duration === null) return c.json({ error: "server_misconfigured" }, 500);
+  const body = await readBody(c, actionSchemas.decide);
+  if (body === null) return c.json({ error: "invalid_body" }, 400);
+  return respond(c, await stubOf(c).decide(body.decision, duration));
+});
 app.post("/me/stats", actionRoute(actionSchemas.stats, (b) => ({ type: "allocate", stat: b.stat })));
 app.post("/me/equip", actionRoute(actionSchemas.equip, (b) => ({ type: "equip", itemId: b.itemId })));
 app.post("/me/unequip", actionRoute(actionSchemas.unequip, (b) => ({ type: "unequip", slot: b.slot })));

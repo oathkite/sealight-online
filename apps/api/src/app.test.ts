@@ -20,10 +20,20 @@ const client = (id: string = crypto.randomUUID()) => {
   return { id, call, stub };
 };
 
-/** 灯を始めてアラームを発火させ、結果を反映させる */
+/** 終了時刻を過去にずらす（25 分待つ代わり） */
+const expire = (c: ReturnType<typeof client>) =>
+  runInDurableObject(c.stub(), async (_, state) => {
+    const current = await state.storage.get<CharacterState>("state");
+    if (current?.phase.type === "exploring") {
+      await state.storage.put("state", { ...current, phase: { ...current.phase, endsAt: Date.now() - 1 } });
+    }
+  });
+
+/** 探索を始め、終了時刻を過ぎたものとしてアラームを発火させ、結果を反映させる */
 const runLamp = async (c: ReturnType<typeof client>) => {
-  const started = await c.call("POST", "/me/lamp");
+  const started = await c.call("POST", "/me/explore");
   expect(started.status).toBe(200);
+  await expire(c);
   expect(await runDurableObjectAlarm(c.stub())).toBe(true);
   return c.call("GET", "/me");
 };
@@ -56,9 +66,9 @@ describe("GET /me", () => {
   });
 });
 
-describe("灯", () => {
+describe("探索", () => {
   it("開始すると探索中になり、終了時刻が決まる", async () => {
-    const { json } = await client().call("POST", "/me/lamp");
+    const { json } = await client().call("POST", "/me/explore");
     expect(json.phase.type).toBe("exploring");
     if (json.phase.type === "exploring") {
       expect(json.phase.endsAt - json.phase.startedAt).toBe(Number(env.LAMP_DURATION_MS));
@@ -67,17 +77,18 @@ describe("灯", () => {
 
   it("探索中にもう一度始めると 409", async () => {
     const c = client();
-    await c.call("POST", "/me/lamp");
-    const again = await c.call("POST", "/me/lamp");
+    await c.call("POST", "/me/explore");
+    const again = await c.call("POST", "/me/explore");
     expect(again.status).toBe(409);
-    expect(again.json.error).toBe("not_ready");
+    expect(again.json.error).toBe("not_in_town");
   });
 
   it("アラームで結果が確定し、sim で同じ状態から計算した結果と一致する", async () => {
     const c = client();
     await c.call("GET", "/me");
     await makeStrong(c);
-    const started = await c.call("POST", "/me/lamp");
+    const started = await c.call("POST", "/me/explore");
+    await expire(c);
     await runDurableObjectAlarm(c.stub());
     const { json } = await c.call("GET", "/me");
 
@@ -88,7 +99,7 @@ describe("灯", () => {
 
   it("探索中に判断すると 409", async () => {
     const c = client();
-    await c.call("POST", "/me/lamp");
+    await c.call("POST", "/me/explore");
     const res = await c.call("POST", "/me/decide", { decision: "descend" });
     expect(res.status).toBe(409);
     expect(res.json.error).toBe("not_in_camp");
@@ -106,13 +117,15 @@ describe("POST /me/decide", () => {
     expect(json.stash).toEqual([...camp.stash, ...camp.bag.items]);
   });
 
-  it("降りると次の深さで待つ", async () => {
+  it("進むと、その場で次の階の探索が始まり、終了時刻にアラームが設定される", async () => {
     const c = client();
     await c.call("GET", "/me");
     await makeStrong(c);
     await runLamp(c);
     const { json } = await c.call("POST", "/me/decide", { decision: "descend" });
-    expect(json.phase).toEqual({ type: "ready", depth: 2 });
+    expect(json.phase.type === "exploring" && json.phase.depth).toBe(2);
+    const alarm = await runInDurableObject(c.stub(), (_, state) => state.storage.getAlarm());
+    expect(json.phase.type === "exploring" && json.phase.endsAt).toBe(alarm);
   });
 
   it("不正な判断は 400", async () => {
@@ -164,15 +177,20 @@ describe("街での行動", () => {
 });
 
 describe("アラームの遅れへの備え", () => {
+  it("終了時刻より前に古いアラームが届いても、探索は確定せずアラームを設定し直す", async () => {
+    const c = client();
+    const { json } = await c.call("POST", "/me/explore");
+    const endsAt = json.phase.type === "exploring" ? json.phase.endsAt : 0;
+    await runInDurableObject(c.stub(), (instance) => instance.alarm());
+    const after = await c.call("GET", "/me");
+    expect(after.json.phase.type).toBe("exploring");
+    expect(await runInDurableObject(c.stub(), (_, state) => state.storage.getAlarm())).toBe(endsAt);
+  });
+
   it("終了時刻を過ぎていれば、取得時にその場で結果を確定する", async () => {
     const c = client();
-    await c.call("POST", "/me/lamp");
-    await runInDurableObject(c.stub(), async (_, state) => {
-      const current = await state.storage.get<CharacterState>("state");
-      if (current?.phase.type === "exploring") {
-        await state.storage.put("state", { ...current, phase: { ...current.phase, endsAt: Date.now() - 1 } });
-      }
-    });
+    await c.call("POST", "/me/explore");
+    await expire(c);
     const { json } = await c.call("GET", "/me");
     expect(json.phase.type).not.toBe("exploring");
     expect(json.lastLamp).not.toBeNull();
