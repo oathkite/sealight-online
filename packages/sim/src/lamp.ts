@@ -69,6 +69,14 @@ const pickUnvisited = (maze: Maze, from: Point, visited: ReadonlySet<string>, rn
   return options[rng.int(options.length)];
 };
 
+const toCombatant = (loadout: Loadout): Combatant => ({
+  hp: loadout.hp,
+  maxHp: maxHpFor(loadout.stats),
+  attack: attackFor(loadout.stats, loadout.weapon),
+  defense: defenseFor(loadout.stats, loadout.armor),
+  potions: loadout.potions,
+});
+
 /** 1 回（25 分）ぶんの探索の途中経過。enter でマスに入るたびに更新する */
 const createExpedition = (input: LampInput, maze: Maze, rng: Rng) => {
   const { seed, depth, loadout, tactics } = input;
@@ -77,13 +85,7 @@ const createExpedition = (input: LampInput, maze: Maze, rng: Rng) => {
   const treasures = new Set(maze.treasures.map(keyOf));
   const events: LampEvent[] = [];
   const items: Equipment[] = [];
-  let me: Combatant = {
-    hp: loadout.hp,
-    maxHp: maxHpFor(loadout.stats),
-    attack: attackFor(loadout.stats, loadout.weapon),
-    defense: defenseFor(loadout.stats, loadout.armor),
-    potions: loadout.potions,
-  };
+  let me = toCombatant(loadout);
   let xp = 0;
   let gold = 0;
   let dead = false;
@@ -120,14 +122,7 @@ const createExpedition = (input: LampInput, maze: Maze, rng: Rng) => {
     if (treasures.delete(key)) open(to);
   };
 
-  const finish = (): LampOutcome => ({
-    status: dead ? "dead" : "survived",
-    hp: me.hp,
-    potions: me.potions,
-    xp,
-    gold,
-    items,
-  });
+  const finish = (): LampOutcome => ({ status: dead ? "dead" : "survived", hp: me.hp, potions: me.potions, xp, gold, items });
 
   return { events, enter, finish, isDead: () => dead };
 };
