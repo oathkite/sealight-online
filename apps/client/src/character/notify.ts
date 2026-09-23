@@ -2,8 +2,8 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 
-const TITLE = "灯が燃え尽きました";
-const BODY = "休憩の時間です。戦利品を確認しましょう。";
+const TITLE = "探索が終わりました";
+const BODY = "結果を確認して、次の行動を決めましょう。";
 const NOTIFICATION_ID = 1;
 
 type Platform = "native" | "tauri" | "web";
@@ -27,7 +27,7 @@ const requestByPlatform = async (platform: Platform): Promise<boolean> => {
   }
 };
 
-/** 灯を始める前に呼び、通知の許可を取っておく（許可待ちの間に灯が進まないように） */
+/** 探索を始める前に呼び、通知の許可を取っておく（許可待ちの間に探索が進まないように） */
 export const ensureNotificationPermission = async (): Promise<boolean> => {
   try {
     return await requestByPlatform(detectPlatform());
@@ -38,7 +38,7 @@ export const ensureNotificationPermission = async (): Promise<boolean> => {
 };
 
 /**
- * 灯の終了時刻に通知を出す。
+ * 探索の終了時刻に通知を出す。
  * スマホは OS のローカル通知（アプリが裏にあっても届く）、デスクトップとブラウザはプロセス内のタイマー。
  */
 export const scheduleLampEndNotification = async (endsAt: number): Promise<void> => {

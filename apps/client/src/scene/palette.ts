@@ -9,4 +9,9 @@ export const PALETTE = {
   body: "#f4e9d8",
   cloak: "#4f8fba",
   lantern: "#ffd27a",
+  slime: "#6fd08c",
+  goblin: "#c9a24a",
+  skeleton: "#e4e0d6",
+  unknownFoe: "#c26a6a",
+  hurt: "#ff5a5a",
 } as const;

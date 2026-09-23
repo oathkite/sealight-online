@@ -1,34 +1,38 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import type { Group } from "three";
+import type { Group, MeshStandardMaterial } from "three";
 import type { Frame } from "@/replay/timeline";
 import { PALETTE } from "./palette";
 
 type ExplorerProps = {
-  /** 毎フレーム呼ばれ、その時点の再生状態を返す */
+  /** 毎フレーム読み、その時点の再生状態に合わせて動かす */
   readonly frameRef: { readonly current: Frame | null };
 };
 
 /** 仮のキャラクター（カプセルの体 + 頭 + ランタン）。本番は Blender のモデルに置き換える */
 export const Explorer = ({ frameRef }: ExplorerProps) => {
   const ref = useRef<Group>(null);
+  const cloak = useRef<MeshStandardMaterial>(null);
 
   useFrame(({ clock }) => {
     const group = ref.current;
     const frame = frameRef.current;
     if (!group || !frame) return;
-    const bob = frame.done ? 0 : Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.06;
+    const walking = frame.status === "walking";
+    const bob = walking ? Math.abs(Math.sin(clock.elapsedTime * 10)) * 0.06 : 0;
     group.position.set(frame.position.x, bob, frame.position.y);
+    group.rotation.z = frame.status === "dead" ? Math.PI / 2.2 : 0;
     if (frame.heading.x !== 0 || frame.heading.y !== 0) {
       group.rotation.y = Math.atan2(frame.heading.x, frame.heading.y);
     }
+    cloak.current?.emissive.set(frame.flash === "player" ? PALETTE.hurt : "#000000");
   });
 
   return (
     <group ref={ref}>
       <mesh position={[0, 0.32, 0]} castShadow>
         <capsuleGeometry args={[0.16, 0.22, 3, 8]} />
-        <meshStandardMaterial color={PALETTE.cloak} flatShading />
+        <meshStandardMaterial ref={cloak} color={PALETTE.cloak} flatShading />
       </mesh>
       <mesh position={[0, 0.62, 0]} castShadow>
         <icosahedronGeometry args={[0.15, 0]} />

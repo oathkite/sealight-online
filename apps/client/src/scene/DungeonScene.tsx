@@ -1,22 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OrthographicCamera } from "@react-three/drei";
-import type { LampResult } from "@sealight/sim";
+import { maxHpFor, type LampResult } from "@sealight/sim";
 import { buildTimeline, frameAt, type Frame } from "@/replay/timeline";
 import { Explorer } from "./Explorer";
 import { MazeMesh } from "./MazeMesh";
+import { Monsters } from "./Monsters";
 import { Treasures } from "./Treasures";
 
-const CELLS_PER_SEC = 6;
 const ISO_DIRECTION = [1, 1.15, 1] as const;
-
-/** 再生状態を持つので、フロアが変わるときは key を変えて作り直す */
-type DungeonSceneProps = {
-  readonly result: LampResult;
-  readonly shadows: boolean;
-  readonly onPicked: (count: number) => void;
-  readonly onFinished: () => void;
-};
 
 const IsoCamera = ({ width, height }: { readonly width: number; readonly height: number }) => {
   const size = useThree((s) => s.size);
@@ -38,28 +30,43 @@ const IsoCamera = ({ width, height }: { readonly width: number; readonly height:
   );
 };
 
-export const DungeonScene = ({ result, shadows, onPicked, onFinished }: DungeonSceneProps) => {
-  const { maze, events } = result;
-  const timeline = useMemo(() => buildTimeline(maze.start, events), [maze.start, events]);
+/** 画面の表示（HUD）に関係する部分だけを比べ、変化したときだけ親に知らせる */
+const hudSignature = (f: Frame): string =>
+  `${f.hp}|${f.foe?.hp ?? "-"}|${f.log}|${f.status}|${f.defeated.size}|${f.opened.size}`;
+
+/** 再生状態を持つので、別の探索を再生するときは key を変えて作り直す */
+type DungeonSceneProps = {
+  readonly lamp: LampResult;
+  readonly shadows: boolean;
+  readonly onFrame?: (frame: Frame) => void;
+  readonly onFinished?: (frame: Frame) => void;
+};
+
+export const DungeonScene = ({ lamp, shadows, onFrame, onFinished }: DungeonSceneProps) => {
+  const { maze, events, input } = lamp;
+  const timeline = useMemo(
+    () => buildTimeline({ start: maze.start, hp: input.loadout.hp, maxHp: maxHpFor(input.loadout.stats), events }),
+    [maze.start, input.loadout, events],
+  );
   const frameRef = useRef<Frame | null>(null);
   const startedAt = useRef<number | null>(null);
   const finished = useRef(false);
-  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
-
-  // シーンは key で作り直されるので、作り直しのたびに宝箱の数を 0 に戻す
-  useEffect(() => onPicked(0), [onPicked]);
+  const lastSignature = useRef("");
+  const [visible, setVisible] = useState<Pick<Frame, "defeated" | "opened">>({ defeated: new Set(), opened: new Set() });
 
   useFrame(({ clock }) => {
     startedAt.current ??= clock.elapsedTime;
-    const frame = frameAt(timeline, clock.elapsedTime - startedAt.current, CELLS_PER_SEC);
+    const frame = frameAt(timeline, clock.elapsedTime - startedAt.current);
     frameRef.current = frame;
-    if (frame.picked.size !== picked.size) {
-      setPicked(frame.picked);
-      onPicked(frame.picked.size);
+    const signature = hudSignature(frame);
+    if (signature !== lastSignature.current) {
+      lastSignature.current = signature;
+      setVisible({ defeated: frame.defeated, opened: frame.opened });
+      onFrame?.(frame);
     }
-    if (frame.done && !finished.current) {
+    if ((frame.status === "done" || frame.status === "dead") && !finished.current) {
       finished.current = true;
-      onFinished();
+      onFinished?.(frame);
     }
   });
 
@@ -78,7 +85,8 @@ export const DungeonScene = ({ result, shadows, onPicked, onFinished }: DungeonS
         shadow-camera-bottom={-maze.height}
       />
       <MazeMesh maze={maze} />
-      <Treasures treasures={maze.treasures} picked={picked} />
+      <Treasures treasures={maze.treasures} picked={visible.opened} />
+      <Monsters monsters={maze.monsters} events={events} defeated={visible.defeated} />
       <Explorer frameRef={frameRef} />
     </>
   );
