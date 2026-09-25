@@ -55,7 +55,7 @@ describe("buildJournal", () => {
   });
 
   it("同じ敵はまとめて数える", () => {
-    expect(journal.rows[0]?.foes).toEqual([{ kind: "slime", name: "スライム", count: 2, rare: false }]);
+    expect(journal.rows[0]?.foes).toEqual([{ kind: "slime", name: "スライム", count: 2, rare: false, traits: [] }]);
   });
 
   it("手に入れたものと、その手に入れ方を残す", () => {
@@ -125,5 +125,22 @@ describe("戦いの記録とポーション", () => {
       { maxHp: 40, status: "fainted" },
     );
     expect(journal.final).toEqual({ depth: 6, foe: "スライム", hpBefore: 13, hpAfter: 0, taken: 53, hits: 0, potions: 2 });
+  });
+});
+
+describe("敵の特徴", () => {
+  it("会った敵の特徴（硬い、群れなど）を行に残す。報告から対策を考えるため", () => {
+    const beetle = { kind: "beetle", name: "甲虫", hp: 14, traits: ["armored"], rare: false } as const;
+    const journal = buildJournal(
+      [
+        { type: "floor", t: 0, depth: 6, direction: "down", hp: 40, rations: 1 },
+        { type: "encounter", t: 10, depth: 6, foe: beetle, hp: 40 },
+        { type: "attack", by: "player", damage: 14, hp: 0 },
+        { type: "victory", xp: 8 },
+        { type: "home", t: 20, hp: 40 },
+      ],
+      { maxHp: 40, status: "returned" },
+    );
+    expect(journal.rows[0]?.foes[0]?.traits).toEqual(["armored"]);
   });
 });

@@ -1,11 +1,18 @@
-import type { FoeKind } from "./catalog";
+import type { FoeKind, Trait } from "./catalog";
 import type { Direction, ExpeditionEvent, ExpeditionOutcome, LootSource } from "./expedition-types";
 import type { Loot } from "./items";
 
 export type Mood = "happy" | "ok" | "tired" | "hurt" | "down";
 export type Margin = "easy" | "fine" | "close" | "failed";
 
-export type JournalFoe = { readonly kind: FoeKind; readonly name: string; readonly count: number; readonly rare: boolean };
+export type JournalFoe = {
+  readonly kind: FoeKind;
+  readonly name: string;
+  readonly count: number;
+  readonly rare: boolean;
+  /** 敵の特徴。報告から対策を考える手がかり */
+  readonly traits: readonly Trait[];
+};
 export type JournalLoot = { readonly source: LootSource; readonly loot: Loot; readonly dropped: boolean };
 
 /** 絵日記の断面図の 1 行。1 つの階を行き（または帰り）に通ったぶん */
@@ -87,7 +94,7 @@ const addFoe = (row: Draft, foe: Extract<ExpeditionEvent, { type: "encounter" }>
   const found = row.foes.findIndex((f) => f.kind === foe.kind && f.name === foe.name);
   const existing = row.foes[found];
   if (existing) row.foes[found] = { ...existing, count: existing.count + 1 };
-  else row.foes.push({ kind: foe.kind, name: foe.name, count: 1, rare: foe.rare });
+  else row.foes.push({ kind: foe.kind, name: foe.name, count: 1, rare: foe.rare, traits: foe.traits });
   if (foe.rare) row.rare = true;
 };
 

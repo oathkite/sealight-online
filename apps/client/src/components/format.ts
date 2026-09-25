@@ -1,4 +1,4 @@
-import type { Equipment, LootSource, Margin, Mood, Reaction } from "@sealight/sim";
+import type { Equipment, LootSource, Margin, Mood, Reaction, Trait } from "@sealight/sim";
 
 export const itemLabel = (item: Equipment): string =>
   `${item.rarity === "rare" ? "★" : ""}${item.name}（${item.slot === "weapon" ? "攻" : "防"}+${item.power}）`;
@@ -34,3 +34,5 @@ export const MARGINS = {
 export const SOURCES = { chest: "宝箱", drop: "敵が落とした", goal: "目標の階の宝" } as const satisfies Record<LootSource, string>;
 
 export const hearts = (count: number): string => "♥".repeat(count) + "♡".repeat(Math.max(0, 5 - count));
+
+export const TRAITS = { swarm: "群れ", armored: "硬い", heavy: "強打", fast: "素早い" } as const satisfies Record<Trait, string>;

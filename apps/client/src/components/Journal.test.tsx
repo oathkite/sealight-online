@@ -120,3 +120,23 @@ describe("Journal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe("Journal の敵の特徴", () => {
+  it("行の詳しい記録に、敵の特徴（硬いなど）が出る", async () => {
+    const beetle = { kind: "beetle", name: "甲虫", hp: 14, traits: ["armored"], rare: false } as const;
+    const { user } = setup(
+      resultOf(
+        [
+          { type: "floor", t: 0, depth: 6, direction: "down", hp: 40, rations: 1 },
+          { type: "encounter", t: 10, depth: 6, foe: beetle, hp: 40 },
+          { type: "attack", by: "foe", damage: 40, hp: 0 },
+          { type: "death", t: 20, depth: 6, cause: "battle" },
+        ],
+        "fainted",
+        6,
+      ),
+    );
+    await user.click(screen.getAllByRole("button", { name: /^B\d/ })[0] as HTMLElement);
+    expect(within(screen.getByRole("region", { name: /B6 行きの記録/ })).getByText("硬い")).toBeInTheDocument();
+  });
+});

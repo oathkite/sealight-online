@@ -293,3 +293,12 @@ select {
 .report-items p {
   margin: 0;
 }
+
+.trait {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(255 122 106 / 0.2);
+  color: var(--foe);
+  font-size: 12px;
+}

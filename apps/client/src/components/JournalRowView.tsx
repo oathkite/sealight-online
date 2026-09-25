@@ -1,5 +1,5 @@
 import type { JournalLoot, JournalRow } from "@sealight/sim";
-import { hearts, itemLabel, MOOD_FACES, SOURCES } from "./format";
+import { hearts, itemLabel, MOOD_FACES, SOURCES, TRAITS } from "./format";
 
 const DIRECTION = { down: "行き", up: "帰り" } as const;
 
@@ -48,6 +48,11 @@ export const JournalRowDetail = ({ row }: { row: JournalRow }) => (
         <li key={`${f.kind}-${f.name}`}>
           {f.rare ? "✨" : ""}
           {f.name} × {f.count}
+          {f.traits.map((t) => (
+            <span key={t} className="trait">
+              {TRAITS[t]}
+            </span>
+          ))}
         </li>
       ))}
       {row.loot.map((l, i) => (
