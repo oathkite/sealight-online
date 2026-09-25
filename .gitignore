@@ -7,3 +7,7 @@ coverage/
 *.log
 .DS_Store
 .claude/worktrees/
+
+# Blender の作業ファイル（art/*.py から作り直せる）
+art/out/
+__pycache__/
