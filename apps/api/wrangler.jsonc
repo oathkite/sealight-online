@@ -14,7 +14,7 @@
     "run_worker_first": ["/me", "/me/*"]
   },
   "vars": {
-    // 探索 1 回 = 25 分。ローカルの `pnpm dev` と `pnpm dev:full` では 30 秒に短縮する
-    "LAMP_DURATION_MS": "1500000"
+    // 時間の倍率。本番は 1（冒険の時間どおり）。ローカルの `pnpm dev` と `pnpm dev:full` では 120 倍速にする
+    "TIME_SCALE": "1"
   }
 }

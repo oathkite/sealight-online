@@ -2,16 +2,16 @@ import { DurableObject } from "cloudflare:workers";
 import {
   allocateStat,
   buy,
-  completeLamp,
   createCharacter,
-  decide,
+  departExpedition,
   equip,
+  returnFromExpedition,
   sell,
   setTactics,
-  startLamp,
+  STATE_VERSION,
   unequip,
   type CharacterState,
-  type Decision,
+  type ExpeditionResult,
   type RuleResult,
   type ShopSku,
   type Slot,
@@ -27,7 +27,11 @@ export type Action =
   | { readonly type: "buy"; readonly sku: ShopSku }
   | { readonly type: "tactics"; readonly tactics: Tactics };
 
-const KEY = "state";
+/** 帰る時刻と結果。帰る時刻まで、画面には渡さない */
+type Pending = { readonly endsAt: number; readonly result: ExpeditionResult };
+
+const STATE_KEY = "state";
+const PENDING_KEY = "pending";
 
 const applyAction = (state: CharacterState, action: Action): RuleResult => {
   switch (action.type) {
@@ -48,53 +52,51 @@ const applyAction = (state: CharacterState, action: Action): RuleResult => {
 
 const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 
+const isCurrent = (value: unknown): value is CharacterState =>
+  typeof value === "object" && value !== null && "version" in value && value.version === STATE_VERSION;
+
 /**
  * キャラ 1 体ぶんの状態を持つ。ゲームのルールはすべて sim の純粋関数に任せ、
- * ここでは保存、探索の終了アラーム、その場での確定（アラームが遅れたとき）だけを扱う。
+ * ここでは保存、帰る時刻のアラーム、結果を帰る時刻まで隠すことだけを扱う。
  */
 export class Character extends DurableObject<Env> {
+  /** 保存形式が古いキャラは作り直す */
   private async load(): Promise<CharacterState> {
-    const stored = await this.ctx.storage.get<CharacterState>(KEY);
-    if (stored) return stored;
+    const stored = await this.ctx.storage.get<unknown>(STATE_KEY);
+    if (isCurrent(stored)) return stored;
     const created = createCharacter();
-    await this.ctx.storage.put(KEY, created);
+    await this.ctx.storage.put(STATE_KEY, created);
+    await this.ctx.storage.delete(PENDING_KEY);
     return created;
   }
 
   private async save(result: RuleResult): Promise<RuleResult> {
-    if (result.ok) await this.ctx.storage.put(KEY, result.value);
+    if (result.ok) await this.ctx.storage.put(STATE_KEY, result.value);
     return result;
   }
 
-  /** 終了時刻を過ぎた探索があれば確定させる。アラームと取得のどちらから呼ばれても 1 回だけ反映される */
+  /** 帰る時刻を過ぎていれば結果を反映する。アラームと取得のどちらから呼ばれても 1 回だけ反映される */
   private async settle(state: CharacterState): Promise<CharacterState> {
-    if (state.phase.type !== "exploring" || Date.now() < state.phase.endsAt) return state;
-    const completed = await this.save(completeLamp(state));
-    return completed.ok ? completed.value : state;
+    if (state.phase.type !== "exploring") return state;
+    const pending = await this.ctx.storage.get<Pending>(PENDING_KEY);
+    if (!pending || Date.now() < pending.endsAt) return state;
+    const returned = await this.save(returnFromExpedition(state, pending.result));
+    await this.ctx.storage.delete(PENDING_KEY);
+    return returned.ok ? returned.value : state;
   }
 
   async state(): Promise<CharacterState> {
     return this.settle(await this.load());
   }
 
-  /** 探索を始める操作の結果を保存し、探索中になったら終了時刻にアラームを設定する */
-  private async beginExploration(result: RuleResult): Promise<RuleResult> {
-    const saved = await this.save(result);
-    if (saved.ok && saved.value.phase.type === "exploring") {
-      await this.ctx.storage.setAlarm(saved.value.phase.endsAt);
-    }
-    return saved;
-  }
-
-  async startLamp(durationMs: number): Promise<RuleResult> {
+  async explore(target: number, rations: number, timeScale: number): Promise<RuleResult> {
     const state = await this.state();
-    return this.beginExploration(startLamp(state, { seed: randomSeed(), now: Date.now(), durationMs }));
-  }
-
-  /** 階段での判断。進む・留まるはその場で次の探索が始まる */
-  async decide(decision: Decision, durationMs: number): Promise<RuleResult> {
-    const state = await this.state();
-    return this.beginExploration(decide(state, decision, { seed: randomSeed(), now: Date.now(), durationMs }));
+    const departed = departExpedition(state, { target, rations, seed: randomSeed(), now: Date.now(), timeScale });
+    if (!departed.ok) return departed;
+    const { endsAt, result } = departed.value;
+    await this.ctx.storage.put(PENDING_KEY, { endsAt, result } satisfies Pending);
+    await this.ctx.storage.setAlarm(endsAt);
+    return this.save({ ok: true, value: departed.value.state });
   }
 
   async act(action: Action): Promise<RuleResult> {
@@ -103,10 +105,11 @@ export class Character extends DurableObject<Env> {
 
   override async alarm(): Promise<void> {
     const state = await this.load();
-    if (state.phase.type !== "exploring") return;
-    // 前の探索のアラームが遅れて届いた場合は、今の探索の終了時刻に設定し直す
-    if (Date.now() < state.phase.endsAt) {
-      await this.ctx.storage.setAlarm(state.phase.endsAt);
+    const pending = await this.ctx.storage.get<Pending>(PENDING_KEY);
+    if (state.phase.type !== "exploring" || !pending) return;
+    // 前の冒険のアラームが遅れて届いた場合は、今の冒険の帰る時刻に設定し直す
+    if (Date.now() < pending.endsAt) {
+      await this.ctx.storage.setAlarm(pending.endsAt);
       return;
     }
     await this.settle(state);

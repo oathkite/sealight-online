@@ -2,10 +2,10 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
-import { isShopSku, type RuleResult, type ShopSku } from "@sealight/sim";
+import { isShopSku, MAX_DEPTH, PACE, type RuleResult, type ShopSku } from "@sealight/sim";
 import type { Action } from "./character";
 
-// ソロ版の許可リスト。ブラウザ開発、Capacitor（Android / iOS）、Tauri。デプロイ先の画面を追加する
+// 同じ Worker から配信する画面は同一オリジンなので不要。Tauri / Capacitor から呼ぶときのための許可リスト
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "https://localhost",
@@ -16,19 +16,19 @@ const ALLOWED_ORIGINS = [
 
 /** アカウントができるまでの仮の識別子。端末で生成した UUID をヘッダーで受け取る */
 const characterIdSchema = z.uuid();
-const durationSchema = z.coerce.number().int().positive();
+const timeScaleSchema = z.coerce.number().positive();
 
-const actionSchemas = {
-  decide: z.object({ decision: z.enum(["descend", "stay", "return"]) }),
+const schemas = {
+  explore: z.object({
+    target: z.number().int().min(1).max(MAX_DEPTH),
+    rations: z.number().int().min(0).max(PACE.bagCapacity),
+  }),
   stats: z.object({ stat: z.enum(["str", "vit", "luk"]) }),
   equip: z.object({ itemId: z.string().min(1).max(100) }),
   unequip: z.object({ slot: z.enum(["weapon", "armor"]) }),
   sell: z.object({ itemId: z.string().min(1).max(100) }),
   buy: z.object({ sku: z.custom<ShopSku>((v) => typeof v === "string" && isShopSku(v)) }),
-  tactics: z.object({
-    potionThreshold: z.number().int().min(0).max(100),
-    priority: z.enum(["stairs", "treasure"]),
-  }),
+  tactics: z.object({ potionThreshold: z.number().int().min(0).max(100) }),
 } as const;
 
 type AppEnv = { Bindings: Env; Variables: { characterId: string } };
@@ -76,27 +76,17 @@ app.use("/me/*", requireCharacterId);
 
 app.get("/me", async (c) => c.json(await stubOf(c).state()));
 
-const durationOf = (c: Context<AppEnv>): number | null => {
-  const duration = durationSchema.safeParse(c.env.LAMP_DURATION_MS);
-  return duration.success ? duration.data : null;
-};
-
 app.post("/me/explore", async (c) => {
-  const duration = durationOf(c);
-  if (duration === null) return c.json({ error: "server_misconfigured" }, 500);
-  return respond(c, await stubOf(c).startLamp(duration));
+  const timeScale = timeScaleSchema.safeParse(c.env.TIME_SCALE);
+  if (!timeScale.success) return c.json({ error: "server_misconfigured" }, 500);
+  const body = await readBody(c, schemas.explore);
+  if (body === null) return c.json({ error: "invalid_body" }, 400);
+  return respond(c, await stubOf(c).explore(body.target, body.rations, timeScale.data));
 });
 
-app.post("/me/decide", async (c) => {
-  const duration = durationOf(c);
-  if (duration === null) return c.json({ error: "server_misconfigured" }, 500);
-  const body = await readBody(c, actionSchemas.decide);
-  if (body === null) return c.json({ error: "invalid_body" }, 400);
-  return respond(c, await stubOf(c).decide(body.decision, duration));
-});
-app.post("/me/stats", actionRoute(actionSchemas.stats, (b) => ({ type: "allocate", stat: b.stat })));
-app.post("/me/equip", actionRoute(actionSchemas.equip, (b) => ({ type: "equip", itemId: b.itemId })));
-app.post("/me/unequip", actionRoute(actionSchemas.unequip, (b) => ({ type: "unequip", slot: b.slot })));
-app.post("/me/sell", actionRoute(actionSchemas.sell, (b) => ({ type: "sell", itemId: b.itemId })));
-app.post("/me/buy", actionRoute(actionSchemas.buy, (b) => ({ type: "buy", sku: b.sku })));
-app.put("/me/tactics", actionRoute(actionSchemas.tactics, (b) => ({ type: "tactics", tactics: b })));
+app.post("/me/stats", actionRoute(schemas.stats, (b) => ({ type: "allocate", stat: b.stat })));
+app.post("/me/equip", actionRoute(schemas.equip, (b) => ({ type: "equip", itemId: b.itemId })));
+app.post("/me/unequip", actionRoute(schemas.unequip, (b) => ({ type: "unequip", slot: b.slot })));
+app.post("/me/sell", actionRoute(schemas.sell, (b) => ({ type: "sell", itemId: b.itemId })));
+app.post("/me/buy", actionRoute(schemas.buy, (b) => ({ type: "buy", sku: b.sku })));
+app.put("/me/tactics", actionRoute(schemas.tactics, (b) => ({ type: "tactics", tactics: b })));

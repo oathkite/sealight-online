@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --var LAMP_DURATION_MS:30000",
+    "dev": "wrangler dev --var TIME_SCALE:120",
     "dev:real": "wrangler dev",
-    "dev:full": "pnpm -C ../client build && wrangler dev --var LAMP_DURATION_MS:30000",
+    "dev:full": "pnpm -C ../client build && wrangler dev --var TIME_SCALE:120",
     "deploy": "pnpm -C ../client build && wrangler deploy",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
