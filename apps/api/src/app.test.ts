@@ -1,7 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { simulateExpedition, type CharacterState, type ExpeditionResult } from "@sealight/sim";
+import { simulateExpedition, STATE_VERSION, type CharacterState, type ExpeditionResult } from "@sealight/sim";
 
 type Body = Record<string, unknown>;
 type Pending = { readonly endsAt: number; readonly result: ExpeditionResult };
@@ -56,7 +56,7 @@ describe("GET /me", () => {
   it("初回は新しいキャラを作って街にいる", async () => {
     const { status, json } = await client().call("GET", "/me");
     expect(status).toBe(200);
-    expect(json.version).toBe(2);
+    expect(json.version).toBe(STATE_VERSION);
     expect(json.phase).toEqual({ type: "town" });
   });
 
@@ -64,7 +64,7 @@ describe("GET /me", () => {
     const c = client();
     await runInDurableObject(c.stub(), (_, state) => state.storage.put("state", { level: 5, phase: { type: "camp" } }));
     const { json } = await c.call("GET", "/me");
-    expect(json.version).toBe(2);
+    expect(json.version).toBe(STATE_VERSION);
     expect(json.level).toBe(1);
   });
 });
