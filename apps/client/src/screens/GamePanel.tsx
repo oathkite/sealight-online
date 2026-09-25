@@ -35,7 +35,7 @@ export const GamePanel = ({ character, busy, reportUnseen, settled, actions, onC
   if (!settled) {
     return (
       <section className="panel compact" aria-label="おかえり">
-        <div>足音が聞こえる。帰ってきた！</div>
+        <div>{lastExpedition?.outcome.status === "fainted" ? "足を引きずる音が聞こえる…" : "足音が聞こえる。帰ってきた！"}</div>
       </section>
     );
   }

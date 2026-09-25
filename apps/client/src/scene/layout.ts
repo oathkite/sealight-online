@@ -4,9 +4,6 @@ export type Vec3 = readonly [number, number, number];
 
 const toVec3 = (values: readonly number[]): Vec3 => [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0];
 
-/** 島の天面の半径。これより外には物を置かない */
-export const ISLAND_RADIUS = spots.islandRadius;
-
 /**
  * 家の場面の配置。カメラは右手前の斜め上から見下ろす（+x と +z の面が見える）。
  * Blender のモデル（art/build_home.py）も同じ spots.json を読んで作る
