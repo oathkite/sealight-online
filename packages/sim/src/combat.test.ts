@@ -11,7 +11,17 @@ const hero = (overrides: Partial<Combatant> = {}): Combatant => ({
   ...overrides,
 });
 
-const slime: Foe = { kind: "slime", name: "スライム", hp: 8, attack: 3, defense: 0, xp: 3 };
+const slime: Foe = {
+  kind: "slime",
+  name: "スライム",
+  hp: 8,
+  attack: 3,
+  defense: 0,
+  xp: 3,
+  traits: [],
+  rare: false,
+  dropChance: 0,
+};
 
 describe("resolveBattle", () => {
   it("同じ乱数からは同じ戦闘結果になる", () => {
@@ -35,7 +45,7 @@ describe("resolveBattle", () => {
   });
 
   it("負けると HP 0 で終わり、victory は出ない", () => {
-    const dragon: Foe = { kind: "skeleton", name: "竜", hp: 999, attack: 50, defense: 50, xp: 100 };
+    const dragon: Foe = { ...slime, kind: "golem", name: "竜", hp: 999, attack: 50, defense: 50, xp: 100 };
     const outcome = resolveBattle(createRng(4), hero(), dragon, 0);
     expect(outcome.won).toBe(false);
     expect(outcome.combatant.hp).toBe(0);
@@ -57,5 +67,14 @@ describe("resolveBattle", () => {
   it("ポーションの回復は最大 HP を超えない", () => {
     const outcome = resolveBattle(createRng(6), hero({ hp: 20, potions: 1 }), slime, 100);
     expect(outcome.events[0]).toEqual({ type: "potion", hp: 30 });
+  });
+});
+
+describe("素早い敵", () => {
+  it("1 ラウンドに 2 回攻撃してくる", () => {
+    const fast: Foe = { ...slime, hp: 999, traits: ["fast"] };
+    const outcome = resolveBattle(createRng(7), hero({ hp: 100, maxHp: 100 }), fast, 0);
+    const firstRound = outcome.events.slice(0, 3).map((e) => (e.type === "attack" ? e.by : e.type));
+    expect(firstRound).toEqual(["player", "foe", "foe"]);
   });
 });

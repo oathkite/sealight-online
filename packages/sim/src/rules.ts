@@ -1,43 +1,89 @@
-import { createCharacter, INITIAL_STATS, maxHpOf, type CharacterState } from "./character";
+import { maxHpOf, type CharacterState, type Tactics } from "./character";
+import { estimateExpedition, reactionFor } from "./estimate";
+import { simulateExpedition } from "./expedition";
+import { PACE, type ExpeditionInput, type ExpeditionResult } from "./expedition-types";
 import type { StatKey } from "./fighter";
+import { MAX_DEPTH } from "./floor";
 import { SHOP, type ShopSku, type Slot } from "./items";
-import { simulateLamp, type LampOutcome, type Tactics } from "./lamp";
 import { failure, success, type Result } from "./result";
 
 export type RuleError =
-  | "not_exploring"
-  | "not_in_camp"
   | "not_in_town"
-  | "exploring"
+  | "not_exploring"
+  | "invalid_target"
+  | "not_enough_rations"
   | "no_points"
   | "item_not_found"
   | "not_enough_gold";
 
 export type RuleResult = Result<CharacterState, RuleError>;
 
-/**
- * 倒れたときに失うもの。
- * A：持ち物だけ / B：持ち物と装備 / C：持ち物、装備、レベルとステータス
- */
-export type LossPolicy = "A" | "B" | "C";
+export type DepartureRequest = {
+  readonly target: number;
+  /** 持たせる食料の数 */
+  readonly rations: number;
+  readonly seed: number;
+  readonly now: number;
+  /** 何倍速で時間を進めるか。本番は 1 */
+  readonly timeScale: number;
+};
 
-export const DEFAULT_LOSS_POLICY: LossPolicy = "A";
-
-export type Decision = "descend" | "stay" | "return";
+/** 送り出した後の状態と、サーバーの中に隠しておく帰る時刻と結果 */
+export type Departure = {
+  readonly state: CharacterState;
+  readonly endsAt: number;
+  readonly result: ExpeditionResult;
+};
 
 const POINTS_PER_LEVEL = 3;
+/** 初めて到達した階から無事に帰ったときの、1 階あたりのご褒美 */
+const FIRST_REACH_GOLD_PER_DEPTH = 15;
+
 const xpToNext = (level: number): number => level * 10;
+const toRealMs = (sec: number, timeScale: number): number => Math.round((sec * 1000) / timeScale);
 
-export type LampStart = { readonly seed: number; readonly now: number; readonly durationMs: number };
-
-const exploringAt = (state: CharacterState, depth: number, lamp: LampStart): CharacterState => ({
-  ...state,
-  phase: { type: "exploring", depth, seed: lamp.seed, startedAt: lamp.now, endsAt: lamp.now + lamp.durationMs },
+const expeditionInput = (state: CharacterState, target: number, rations: number): Omit<ExpeditionInput, "seed"> => ({
+  target,
+  loadout: {
+    stats: state.stats,
+    potions: state.potions,
+    rations,
+    weapon: state.equipment.weapon,
+    armor: state.equipment.armor,
+  },
+  maps: state.maps,
+  potionThreshold: state.tactics.potionThreshold,
 });
 
-/** 街から地下 1 階の探索に出る */
-export const startLamp = (state: CharacterState, lamp: LampStart): RuleResult =>
-  state.phase.type === "town" ? success(exploringAt(state, 1, lamp)) : failure("not_in_town");
+/** 目標の階と持たせる食料を決めて送り出す。冒険はこの時点で計算し、結果は帰る時刻まで隠す */
+export const departExpedition = (state: CharacterState, request: DepartureRequest): Result<Departure, RuleError> => {
+  if (state.phase.type !== "town") return failure("not_in_town");
+  const { target, rations, seed, now, timeScale } = request;
+  if (!Number.isInteger(target) || target < 1 || target > MAX_DEPTH) return failure("invalid_target");
+  if (!Number.isInteger(rations) || rations < 0 || rations > state.rations || rations > PACE.bagCapacity) {
+    return failure("not_enough_rations");
+  }
+
+  const input = expeditionInput(state, target, rations);
+  const result = simulateExpedition({ ...input, seed });
+  const estimate = estimateExpedition(input);
+  const departed: CharacterState = {
+    ...state,
+    potions: 0,
+    rations: state.rations - rations,
+    phase: {
+      type: "exploring",
+      target,
+      startedAt: now,
+      estimate: {
+        minMs: toRealMs(estimate.minSec, timeScale),
+        maxMs: toRealMs(estimate.maxSec, timeScale),
+        reaction: reactionFor(estimate.successRate),
+      },
+    },
+  };
+  return success({ state: departed, endsAt: now + toRealMs(result.outcome.durationSec, timeScale), result });
+};
 
 const gainXp = (state: CharacterState, xp: number): CharacterState => {
   let { level, unspentPoints } = state;
@@ -50,79 +96,38 @@ const gainXp = (state: CharacterState, xp: number): CharacterState => {
   return { ...state, level, unspentPoints, xp: remaining };
 };
 
-const applyDeath = (state: CharacterState, policy: LossPolicy): CharacterState => {
-  const withoutBag: CharacterState = { ...state, bag: { items: [], gold: 0 }, phase: { type: "town" } };
-  const withoutGear: CharacterState =
-    policy === "A" ? withoutBag : { ...withoutBag, equipment: { weapon: null, armor: null } };
-  const lost: CharacterState =
-    policy === "C"
-      ? { ...withoutGear, level: 1, xp: 0, unspentPoints: createCharacter().unspentPoints, stats: INITIAL_STATS }
-      : withoutGear;
-  return { ...lost, hp: maxHpOf(lost) };
-};
+/** 帰ってきた冒険の結果を反映する。倒れた場合は拾ったものと持たせた食料を失うが、経験と地図は残る */
+export const returnFromExpedition = (state: CharacterState, result: ExpeditionResult): RuleResult => {
+  if (state.phase.type !== "exploring") return failure("not_exploring");
+  const { outcome, input } = result;
+  const grown: CharacterState = {
+    ...gainXp(state, outcome.xp),
+    maps: outcome.maps,
+    bestDepth: Math.max(state.bestDepth, outcome.reached),
+    phase: { type: "town" },
+    lastExpedition: result,
+  };
+  if (outcome.status === "fainted") return success(grown);
 
-const applySurvival = (state: CharacterState, outcome: LampOutcome, depth: number): CharacterState => ({
-  ...gainXp(state, outcome.xp),
-  hp: outcome.hp,
-  bag: { items: [...state.bag.items, ...outcome.items], gold: state.bag.gold + outcome.gold },
-  phase: { type: "camp", depth },
-  bestDepth: Math.max(state.bestDepth, depth),
-});
-
-/** 探索の終了時に呼ぶ。探索をシミュレーションして結果を反映する */
-export const completeLamp = (state: CharacterState, policy: LossPolicy = DEFAULT_LOSS_POLICY): RuleResult => {
-  const { phase } = state;
-  if (phase.type !== "exploring") return failure("not_exploring");
-
-  const result = simulateLamp({
-    seed: phase.seed,
-    depth: phase.depth,
-    loadout: {
-      stats: state.stats,
-      hp: state.hp,
-      potions: state.potions,
-      weapon: state.equipment.weapon,
-      armor: state.equipment.armor,
-    },
-    tactics: state.tactics,
+  const firstReach = input.target > state.bestDepth ? input.target * FIRST_REACH_GOLD_PER_DEPTH : 0;
+  return success({
+    ...grown,
+    stash: [...state.stash, ...outcome.items],
+    gold: state.gold + outcome.gold + firstReach,
+    potions: state.potions + outcome.potions,
+    rations: state.rations + outcome.rations,
   });
-  const withPotions = { ...state, potions: result.outcome.potions, lastLamp: result };
-  const next =
-    result.outcome.status === "dead"
-      ? applyDeath(withPotions, policy)
-      : applySurvival(withPotions, result.outcome, phase.depth);
-  return success(next);
-};
-
-/** 階段での判断。進む・留まるはその場で次の探索を始め、帰還は持ち物を倉庫に移して街に戻る */
-export const decide = (state: CharacterState, decision: Decision, lamp: LampStart): RuleResult => {
-  const { phase } = state;
-  if (phase.type !== "camp") return failure("not_in_camp");
-  switch (decision) {
-    case "descend":
-      return success(exploringAt(state, phase.depth + 1, lamp));
-    case "stay":
-      return success(exploringAt(state, phase.depth, lamp));
-    case "return":
-      return success({
-        ...state,
-        stash: [...state.stash, ...state.bag.items],
-        gold: state.gold + state.bag.gold,
-        bag: { items: [], gold: 0 },
-        hp: maxHpOf(state),
-        phase: { type: "town" },
-      });
-  }
-};
-
-export const allocateStat = (state: CharacterState, stat: StatKey): RuleResult => {
-  if (state.unspentPoints <= 0) return failure("no_points");
-  const next = { ...state, stats: { ...state.stats, [stat]: state.stats[stat] + 1 }, unspentPoints: state.unspentPoints - 1 };
-  return success({ ...next, hp: state.hp + (maxHpOf(next) - maxHpOf(state)) });
 };
 
 const inTown = (state: CharacterState, action: (s: CharacterState) => RuleResult): RuleResult =>
   state.phase.type === "town" ? action(state) : failure("not_in_town");
+
+/** ステータスの割り振り（モンスターが家にいるときだけ） */
+export const allocateStat = (state: CharacterState, stat: StatKey): RuleResult =>
+  inTown(state, (s) => {
+    if (s.unspentPoints <= 0) return failure("no_points");
+    return success({ ...s, stats: { ...s.stats, [stat]: s.stats[stat] + 1 }, unspentPoints: s.unspentPoints - 1 });
+  });
 
 export const equip = (state: CharacterState, itemId: string): RuleResult =>
   inTown(state, (s) => {
@@ -140,30 +145,32 @@ export const unequip = (state: CharacterState, slot: Slot): RuleResult =>
     return success({ ...s, stash: [...s.stash, item], equipment: { ...s.equipment, [slot]: null } });
   });
 
-export const sell = (state: CharacterState, itemId: string): RuleResult =>
-  inTown(state, (s) => {
-    const item = s.stash.find((i) => i.id === itemId);
-    if (!item) return failure("item_not_found");
-    return success({ ...s, gold: s.gold + item.value, stash: s.stash.filter((i) => i.id !== itemId) });
-  });
-
-/** 装備を買うときは、呼び出し側が一意な ID を渡す */
-export const buy = (state: CharacterState, sku: ShopSku, newItemId: string): RuleResult =>
-  inTown(state, (s) => {
-    const product = SHOP[sku];
-    if (s.gold < product.price) return failure("not_enough_gold");
-    const paid = { ...s, gold: s.gold - product.price };
-    if (product.type === "potion") return success({ ...paid, potions: paid.potions + 1 });
-    const item = {
-      id: newItemId,
-      slot: product.slot,
-      name: product.name,
-      rarity: "common",
-      power: product.power,
-      value: Math.floor(product.price / 2),
-    } as const;
-    return success({ ...paid, stash: [...paid.stash, item] });
-  });
-
 export const setTactics = (state: CharacterState, tactics: Tactics): RuleResult =>
-  state.phase.type === "exploring" ? failure("exploring") : success({ ...state, tactics });
+  inTown(state, (s) => success({ ...s, tactics }));
+
+/** 倉庫の装備を売る（モンスターの留守中もできる） */
+export const sell = (state: CharacterState, itemId: string): RuleResult => {
+  const item = state.stash.find((i) => i.id === itemId);
+  if (!item) return failure("item_not_found");
+  return success({ ...state, gold: state.gold + item.value, stash: state.stash.filter((i) => i.id !== itemId) });
+};
+
+/** 店で買う（モンスターの留守中もできる）。装備を買うときは、呼び出し側が一意な ID を渡す */
+export const buy = (state: CharacterState, sku: ShopSku, newItemId: string): RuleResult => {
+  const product = SHOP[sku];
+  if (state.gold < product.price) return failure("not_enough_gold");
+  const paid = { ...state, gold: state.gold - product.price };
+  if (product.type === "potion") return success({ ...paid, potions: paid.potions + 1 });
+  if (product.type === "ration") return success({ ...paid, rations: paid.rations + 1 });
+  const item = {
+    id: newItemId,
+    slot: product.slot,
+    name: product.name,
+    rarity: "common",
+    power: product.power,
+    value: Math.floor(product.price / 2),
+  } as const;
+  return success({ ...paid, stash: [...paid.stash, item] });
+};
+
+export { maxHpOf };

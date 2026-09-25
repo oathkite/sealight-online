@@ -23,9 +23,11 @@ export const ITEM_NAMES = {
 
 export type ShopItem =
   | { readonly type: "potion"; readonly price: number }
+  | { readonly type: "ration"; readonly price: number }
   | { readonly type: "equipment"; readonly price: number; readonly slot: Slot; readonly name: string; readonly power: number };
 
 export const SHOP = {
+  ration: { type: "ration", price: 5 },
   potion: { type: "potion", price: 15 },
   "iron-sword": { type: "equipment", price: 60, slot: "weapon", name: "鉄の剣", power: 4 },
   "leather-armor": { type: "equipment", price: 50, slot: "armor", name: "革の鎧", power: 2 },

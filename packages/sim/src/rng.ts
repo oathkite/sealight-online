@@ -28,3 +28,15 @@ export const createRng = (seed: number): Rng => {
 
   return { next, int };
 };
+
+/** Fisher–Yates で並べ替えた新しい配列を返す。元の配列は変えない */
+export const shuffle = <T>(rng: Rng, items: readonly T[]): readonly T[] => {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = rng.int(i + 1);
+    const a = result[i] as T;
+    result[i] = result[j] as T;
+    result[j] = a;
+  }
+  return result;
+};

@@ -1,0 +1,66 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`simulateExpedition > 特定のシードの結果が変わらない（乱数の消費順が変わったら検知する） 1`] = `
+{
+  "eventCount": 101,
+  "outcome": {
+    "durationSec": 6872,
+    "gold": 57,
+    "hp": 56,
+    "items": [
+      {
+        "id": "42:1",
+        "name": "手斧",
+        "power": 2,
+        "rarity": "common",
+        "slot": "weapon",
+        "value": 10,
+      },
+      {
+        "id": "42:24",
+        "name": "灯火の剣",
+        "power": 9,
+        "rarity": "rare",
+        "slot": "weapon",
+        "value": 135,
+      },
+      {
+        "id": "42:46",
+        "name": "棍棒",
+        "power": 6,
+        "rarity": "common",
+        "slot": "weapon",
+        "value": 30,
+      },
+      {
+        "id": "42:61",
+        "name": "革の胸当て",
+        "power": 4,
+        "rarity": "common",
+        "slot": "armor",
+        "value": 20,
+      },
+      {
+        "id": "42:94",
+        "name": "深海の鎧",
+        "power": 7,
+        "rarity": "rare",
+        "slot": "armor",
+        "value": 105,
+      },
+    ],
+    "maps": [
+      73,
+      22,
+      71,
+      106,
+    ],
+    "maxHp": 56,
+    "potions": 0,
+    "rations": 3,
+    "reached": 4,
+    "status": "returned",
+    "xp": 63,
+  },
+}
+`;

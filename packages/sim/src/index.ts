@@ -1,37 +1,51 @@
 export type { Maze, Point } from "./types";
 export type { Result } from "./result";
-export { createRng, type Rng } from "./rng";
+export { createRng, shuffle, type Rng } from "./rng";
 export { generateMaze, isFloor, type MazeOptions } from "./maze";
-export { findPath } from "./path";
-export { floorConfig, foeAt, spawnFoe, type FloorConfig, type Foe, type FoeKind } from "./catalog";
+export { findPath, toIndex } from "./path";
+export { FLOOR_SIZE, generateFloor, MAX_DEPTH, type Floor } from "./floor";
+export { bandOf, floorConfig, foeAt, spawnFoe, type FloorConfig, type Foe, type FoeKind, type Trait } from "./catalog";
 export { isShopSku, SHOP, type Equipment, type Loot, type Rarity, type ShopSku, type Slot } from "./items";
 export { attackFor, defenseFor, maxHpFor, STAT_KEYS, type StatKey, type Stats } from "./fighter";
 export type { BattleEvent } from "./combat";
 export {
-  simulateLamp,
-  STANDARD_FLOOR,
-  type LampEvent,
-  type LampInput,
-  type LampOutcome,
-  type LampResult,
-  type Loadout,
-  type Tactics,
-} from "./lamp";
-export { createCharacter, maxHpOf, type CharacterState, type Phase } from "./character";
+  PACE,
+  type Direction,
+  type ExpeditionEvent,
+  type ExpeditionInput,
+  type ExpeditionLoadout,
+  type ExpeditionOutcome,
+  type ExpeditionResult,
+  type FoeView,
+  type LootSource,
+  type MapKnowledge,
+} from "./expedition-types";
+export { simulateExpedition } from "./expedition";
+export { estimateExpedition, reactionFor, type Estimate, type Reaction } from "./estimate";
+export {
+  buildJournal,
+  heartsOf,
+  moodOf,
+  type BattleNote,
+  type Journal,
+  type JournalFoe,
+  type JournalLoot,
+  type JournalRow,
+  type Margin,
+  type Mood,
+} from "./journal";
+export { createCharacter, maxHpOf, STATE_VERSION, type CharacterState, type Phase, type Tactics } from "./character";
 export {
   allocateStat,
   buy,
-  completeLamp,
-  decide,
-  DEFAULT_LOSS_POLICY,
+  departExpedition,
   equip,
+  returnFromExpedition,
   sell,
   setTactics,
-  startLamp,
   unequip,
-  type Decision,
-  type LampStart,
-  type LossPolicy,
+  type Departure,
+  type DepartureRequest,
   type RuleError,
   type RuleResult,
 } from "./rules";

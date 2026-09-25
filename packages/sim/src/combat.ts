@@ -55,10 +55,14 @@ export const resolveBattle = (rng: Rng, start: Combatant, foe: Foe, potionThresh
       }
     }
 
-    const damage = damageOf(rng, foe.attack, me.defense);
-    me = { ...me, hp: Math.max(0, me.hp - damage) };
-    events.push({ type: "attack", by: "foe", damage, hp: me.hp });
-    if (me.hp === 0) return { won: false, combatant: me, events };
+    // 素早い敵は 1 ラウンドに 2 回攻撃する
+    const strikes = foe.traits.includes("fast") ? 2 : 1;
+    for (let strike = 0; strike < strikes; strike += 1) {
+      const damage = damageOf(rng, foe.attack, me.defense);
+      me = { ...me, hp: Math.max(0, me.hp - damage) };
+      events.push({ type: "attack", by: "foe", damage, hp: me.hp });
+      if (me.hp === 0) return { won: false, combatant: me, events };
+    }
   }
   // 決着がつかないほど長引いた戦闘は、力尽きたものとして扱う
   return { won: false, combatant: { ...me, hp: 0 }, events };

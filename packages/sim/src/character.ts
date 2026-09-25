@@ -1,39 +1,47 @@
+import type { Reaction } from "./estimate";
+import type { ExpeditionResult, MapKnowledge } from "./expedition-types";
 import { maxHpFor, type Stats } from "./fighter";
 import type { Equipment } from "./items";
-import type { LampResult, Tactics } from "./lamp";
+
+/** 保存形式の版。形を変えたら上げ、古い版のキャラは作り直す */
+export const STATE_VERSION = 2;
+
+export type Tactics = {
+  /** HP がこの割合（%）を下回ったらポーションを飲む。0 なら飲まない */
+  readonly potionThreshold: number;
+};
 
 /**
- * キャラの居場所と進行状況。
- * town → exploring（25 分の探索）→ camp（階段で次の行動を待つ）→ exploring …
- * 進む・留まるを選ぶとその場で次の探索が始まる。倒れるか帰還すると town に戻る。
+ * キャラの居場所。街で準備して送り出すと exploring になり、帰ってくると town に戻る。
+ * exploring には帰る時刻と結果を入れない（サーバーの中に隠しておく）。
  */
 export type Phase =
   | { readonly type: "town" }
   | {
       readonly type: "exploring";
-      readonly depth: number;
-      readonly seed: number;
+      readonly target: number;
       readonly startedAt: number;
-      readonly endsAt: number;
-    }
-  | { readonly type: "camp"; readonly depth: number };
+      readonly estimate: { readonly minMs: number; readonly maxMs: number; readonly reaction: Reaction };
+    };
 
 export type CharacterState = {
+  readonly version: typeof STATE_VERSION;
   readonly level: number;
   readonly xp: number;
   readonly unspentPoints: number;
   readonly stats: Stats;
-  readonly hp: number;
   readonly gold: number;
   readonly potions: number;
+  /** 家にある食料 */
+  readonly rations: number;
   readonly equipment: { readonly weapon: Equipment | null; readonly armor: Equipment | null };
-  /** 倉庫。倒れても失わない */
+  /** 倉庫。失敗しても失わない */
   readonly stash: readonly Equipment[];
-  /** 持ち物（まだ持ち帰っていない戦利品）。倒れると失う */
-  readonly bag: { readonly items: readonly Equipment[]; readonly gold: number };
   readonly tactics: Tactics;
+  /** 階ごとの地図。失敗しても残る */
+  readonly maps: MapKnowledge;
   readonly phase: Phase;
-  readonly lastLamp: LampResult | null;
+  readonly lastExpedition: ExpeditionResult | null;
   readonly bestDepth: number;
 };
 
@@ -51,18 +59,19 @@ const STARTER_WEAPON: Equipment = {
 export const maxHpOf = (state: Pick<CharacterState, "stats">): number => maxHpFor(state.stats);
 
 export const createCharacter = (): CharacterState => ({
+  version: STATE_VERSION,
   level: 1,
   xp: 0,
   unspentPoints: 3,
   stats: INITIAL_STATS,
-  hp: maxHpFor(INITIAL_STATS),
   gold: 50,
   potions: 2,
+  rations: 8,
   equipment: { weapon: STARTER_WEAPON, armor: null },
   stash: [],
-  bag: { items: [], gold: 0 },
-  tactics: { potionThreshold: 30, priority: "stairs" },
+  tactics: { potionThreshold: 30 },
+  maps: [],
   phase: { type: "town" },
-  lastLamp: null,
+  lastExpedition: null,
   bestDepth: 0,
 });

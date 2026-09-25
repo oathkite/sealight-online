@@ -47,3 +47,19 @@ describe("findPath", () => {
     expect(findPath(maze, { x: 1, y: 1 }, { x: 2, y: 2 })).toBeNull();
   });
 });
+
+describe("findPath で通れるマスを絞る", () => {
+  const maze = fromAscii(["#######", "#.....#", "#.###.#", "#...#.#", "#######"]);
+  const index = (x: number, y: number): number => y * maze.width + x;
+
+  it("通れるマスだけを通る経路を返す", () => {
+    const known = new Set([index(1, 1), index(2, 1), index(3, 1), index(4, 1), index(5, 1), index(5, 2), index(5, 3)]);
+    const path = findPath(maze, { x: 1, y: 1 }, { x: 5, y: 3 }, (i) => known.has(i));
+    expect(path?.every((p) => known.has(index(p.x, p.y)))).toBe(true);
+  });
+
+  it("通れるマスだけではたどり着けないときは null", () => {
+    const known = new Set([index(1, 1), index(1, 2)]);
+    expect(findPath(maze, { x: 1, y: 1 }, { x: 3, y: 3 }, (i) => known.has(i))).toBeNull();
+  });
+});

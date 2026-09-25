@@ -1,4 +1,4 @@
-import type { Rng } from "./rng";
+import { shuffle, type Rng } from "./rng";
 import type { Maze, Point } from "./types";
 
 export type MazeOptions = {
@@ -33,17 +33,6 @@ const assertSize = (label: string, value: number): void => {
 
 export const isFloor = (maze: Pick<Maze, "width" | "height" | "cells">, p: Point): boolean =>
   p.x >= 0 && p.y >= 0 && p.x < maze.width && p.y < maze.height && maze.cells[p.y * maze.width + p.x] === true;
-
-const shuffled = <T>(items: readonly T[], rng: Rng): readonly T[] => {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i -= 1) {
-    const j = rng.int(i + 1);
-    const a = result[i] as T;
-    result[i] = result[j] as T;
-    result[j] = a;
-  }
-  return result;
-};
 
 /** 穴掘り法（反復版の再帰的バックトラック）で、奇数座標を部屋とする迷路の床を掘る */
 const carve = (width: number, height: number, start: Point, rng: Rng): readonly boolean[] => {
@@ -82,9 +71,9 @@ export const generateMaze = (options: MazeOptions, rng: Rng): Maze => {
 
   const start: Point = { x: 1, y: 1 };
   const cells = carve(width, height, start, rng);
-  const candidates = shuffled(
-    floorPoints(width, cells).filter((p) => p.x !== start.x || p.y !== start.y),
+  const candidates = shuffle(
     rng,
+    floorPoints(width, cells).filter((p) => p.x !== start.x || p.y !== start.y),
   );
   const [stairs, ...rest] = candidates;
   if (!stairs) throw new RangeError("maze has no room for stairs");
