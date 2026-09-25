@@ -6,7 +6,7 @@ import type { Equipment, Loot } from "./items";
 /** 時間と食料の係数。遊んで調整するつまみ */
 export const PACE = {
   /** 1 マス歩くのにかかる秒数 */
-  moveSec: 12,
+  moveSec: 2,
   /** 戦闘 1 ラウンドにかかる秒数 */
   battleRoundSec: 6,
   /** 宝箱を開けるのにかかる秒数 */

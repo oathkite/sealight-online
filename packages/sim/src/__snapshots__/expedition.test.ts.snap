@@ -4,7 +4,7 @@ exports[`simulateExpedition > 特定のシードの結果が変わらない（�
 {
   "eventCount": 101,
   "outcome": {
-    "durationSec": 6872,
+    "durationSec": 1512,
     "gold": 57,
     "hp": 56,
     "items": [
