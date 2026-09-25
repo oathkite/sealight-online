@@ -6,7 +6,9 @@ import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
 import { FpsProbe } from "@/hud/FpsProbe";
 import { HomeScene } from "@/scene/HomeScene";
-import { PALETTE } from "@/scene/palette";
+import { SkyBackdrop } from "@/scene/SkyBackdrop";
+import { useStage } from "@/scene/useStage";
+import { useTimeOfDay } from "@/scene/useTimeOfDay";
 import { GamePanel } from "@/screens/GamePanel";
 import { usePanelActions } from "@/screens/usePanelActions";
 
@@ -19,24 +21,32 @@ export const App = () => {
   const actions = usePanelActions(api, view);
   const { character, error, busy } = view;
   const [fps, setFps] = useState(0);
+  const lighting = useTimeOfDay();
 
   const lastExpedition = character?.lastExpedition ?? null;
   const { unseen, markSeen } = useSeenReport(lastExpedition);
-  const present = character?.phase.type !== "exploring";
+  const present = character ? character.phase.type !== "exploring" : null;
+  const outcome = lastExpedition?.outcome;
   // ボロボロで帰ってきた（または余裕がなかった）ときは、見た目で分かるようにする
-  const hurt = present && lastExpedition !== null && lastExpedition.outcome.hp / lastExpedition.outcome.maxHp < 0.4;
+  const mood = {
+    hurt: present === true && outcome !== undefined && outcome.hp / outcome.maxHp < 0.4,
+    sleepy: lighting.lamp > 0.85,
+    carrying: outcome !== undefined && outcome.status === "returned" && (outcome.items.length > 0 || outcome.gold > 0),
+  };
+  const stage = useStage(present, mood.hurt);
 
   return (
     <main className="app">
-      <Canvas shadows={SHADOWS ? "percentage" : false} dpr={[1, 1.5]} style={{ background: PALETTE.background }}>
-        <HomeScene present={present} hurt={hurt} />
+      <SkyBackdrop lighting={lighting} />
+      <Canvas flat shadows={SHADOWS ? "percentage" : false} dpr={[1, 1.5]} gl={{ alpha: true }}>
+        <HomeScene stage={stage} mood={mood} lighting={lighting} />
         <FpsProbe onReport={setFps} />
       </Canvas>
       <div className="hud-fps">{fps} fps</div>
       <div className="overlay">
         {error ? <p className="error">エラー：{error}</p> : null}
         {character ? (
-          <GamePanel character={character} busy={busy} reportUnseen={unseen} actions={actions} onCloseReport={markSeen} />
+          <GamePanel character={character} busy={busy} reportUnseen={unseen && stage.act !== "arriving"} actions={actions} onCloseReport={markSeen} />
         ) : (
           <p className="panel compact">{error ? "サーバーに接続できません" : "読み込み中..."}</p>
         )}

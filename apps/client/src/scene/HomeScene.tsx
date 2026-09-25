@@ -1,82 +1,105 @@
-import { OrthographicCamera } from "@react-three/drei";
+import { Suspense } from "react";
+import { OrthographicCamera, Sparkles } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
+import { HomeModel } from "./HomeModel";
+import { SPOTS } from "./layout";
 import { Monster } from "./Monster";
 import { PALETTE } from "./palette";
+import type { Mood } from "./stage";
+import type { Lighting } from "./timeOfDay";
+import type { Stage } from "./useStage";
 
-const VIEW_SIZE = 10;
+/** 画面の短い辺に収める広さ（ワールド単位） */
+const VIEW_SIZE = 12;
+/** PC で右側に出るパネルの幅（index.css の .overlay と合わせる） */
+const PANEL_WIDTH = 576;
+const WIDE = 900;
 
-const IsoCamera = () => {
-  const size = useThree((s) => s.size);
-  const zoom = Math.min(size.width, size.height) / VIEW_SIZE;
+const EYE = new Vector3(10, 8.6, 10);
+const TARGET = new Vector3(0, -1.4, 0);
+const FORWARD = TARGET.clone().sub(EYE).normalize();
+const RIGHT = FORWARD.clone().cross(new Vector3(0, 1, 0)).normalize();
+const UP = RIGHT.clone().cross(FORWARD).normalize();
+
+/**
+ * 斜め上から見下ろすカメラ。パネルに隠れない場所に島が来るよう、カメラを平行移動する。
+ * PC はパネルの左側、スマホはパネルの上側の真ん中に島を置く
+ */
+const FramedCamera = () => {
+  const { width, height } = useThree((s) => s.size);
+  const wide = width >= WIDE;
+  const visible = wide ? { w: width - PANEL_WIDTH, h: height } : { w: width, h: height * 0.5 };
+  const zoom = Math.min(visible.w, visible.h * 1.15) / VIEW_SIZE;
+  // 画面上で島を左（PC）または上（スマホ）へずらす量（ピクセル）
+  const shiftX = wide ? PANEL_WIDTH / 2 : 0;
+  const shiftY = wide ? 0 : height * 0.24;
+  const offset = RIGHT.clone().multiplyScalar(shiftX / zoom).add(UP.clone().multiplyScalar(-shiftY / zoom));
+  const eye = EYE.clone().add(offset);
+  const target = TARGET.clone().add(offset);
   return (
-    <OrthographicCamera makeDefault zoom={zoom} position={[8, 9, 8]} near={0.1} far={50} onUpdate={(c) => c.lookAt(0, 0, 0)} />
+    <OrthographicCamera makeDefault zoom={zoom} position={eye} near={0.1} far={60} onUpdate={(c) => c.lookAt(target)} />
   );
 };
 
-/** 町外れの小屋（仮）。壁、屋根、扉 */
-const Hut = () => (
-  <group position={[-0.6, 0, -1]}>
-    <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-      <boxGeometry args={[2, 1.2, 1.6]} />
-      <meshStandardMaterial color={PALETTE.hutWall} flatShading />
-    </mesh>
-    <mesh position={[0, 1.55, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
-      <coneGeometry args={[1.6, 0.8, 4]} />
-      <meshStandardMaterial color={PALETTE.roof} flatShading />
-    </mesh>
-    <mesh position={[0.3, 0.4, 0.81]}>
-      <boxGeometry args={[0.4, 0.8, 0.02]} />
-      <meshStandardMaterial color={PALETTE.door} />
-    </mesh>
-  </group>
+const Sky = ({ lighting }: { lighting: Lighting }) => (
+  <>
+    <fog attach="fog" args={[lighting.fog, 18, 34]} />
+    <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
+    <directionalLight
+      position={[...lighting.sunPosition]}
+      color={lighting.sunColor}
+      intensity={lighting.sunIntensity}
+      castShadow
+      shadow-mapSize={[1024, 1024]}
+      shadow-bias={-0.0008}
+      shadow-normalBias={0.03}
+    >
+      <orthographicCamera attach="shadow-camera" args={[-7, 7, 7, -7, 0.5, 30]} />
+    </directionalLight>
+    {/* 夜は蛍、昼は綿毛が漂う */}
+    <Sparkles
+      count={24}
+      scale={[8, 2, 8]}
+      position={[0, 1, 0]}
+      size={lighting.lamp > 0.5 ? 3.5 : 2}
+      speed={0.25}
+      color={lighting.lamp > 0.5 ? "#e8ff9a" : "#fffbe8"}
+      opacity={0.35 + lighting.lamp * 0.6}
+    />
+  </>
 );
 
-/** 小さな畑（仮）。2x2 の区画に芽が出ている */
-const Field = () => (
-  <group position={[1.6, 0, 0.2]}>
-    {[-0.35, 0.35].flatMap((x) =>
-      [-0.35, 0.35].map((z) => (
-        <group key={`${x}-${z}`} position={[x, 0, z]}>
-          <mesh position={[0, 0.05, 0]} receiveShadow>
-            <boxGeometry args={[0.6, 0.1, 0.6]} />
-            <meshStandardMaterial color={PALETTE.soil} flatShading />
-          </mesh>
-          <mesh position={[0, 0.2, 0]}>
-            <coneGeometry args={[0.08, 0.2, 5]} />
-            <meshStandardMaterial color={PALETTE.sprout} flatShading />
-          </mesh>
-        </group>
-      )),
-    )}
+/** ダンジョンの入口から漏れる光と粒 */
+const GateGlow = () => (
+  <group position={[SPOTS.gate[0], 0, SPOTS.gate[2]]}>
+    <pointLight position={[0, 0.3, 0]} color={PALETTE.dungeonGlow} intensity={1.5} distance={2.4} decay={2} />
+    <Sparkles count={14} scale={[0.8, 1.2, 1]} position={[0, 0.6, 0]} size={2.4} speed={0.35} color={PALETTE.dungeonGlow} opacity={0.85} />
   </group>
 );
 
 type HomeSceneProps = {
-  /** モンスターが家にいるか（冒険中は寝床が空っぽ） */
-  readonly present: boolean;
-  readonly hurt: boolean;
+  /** モンスターの場面（家、出発、留守、帰り） */
+  readonly stage: Stage;
+  readonly mood: Mood;
+  readonly lighting: Lighting;
 };
 
-/** 留守の家。モンスターの寝床（わら）とごはんの皿があり、家にいるときだけモンスターがいる */
-export const HomeScene = ({ present, hurt }: HomeSceneProps) => (
-  <>
-    <IsoCamera />
-    <hemisphereLight args={["#fff4dc", "#3a3450", 1.2]} />
-    <directionalLight position={[5, 8, 3]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <circleGeometry args={[4, 8]} />
-      <meshStandardMaterial color={PALETTE.grass} flatShading />
-    </mesh>
-    <Hut />
-    <Field />
-    <mesh position={[0.4, 0.05, 0.9]} receiveShadow>
-      <cylinderGeometry args={[0.55, 0.6, 0.1, 7]} />
-      <meshStandardMaterial color={PALETTE.straw} flatShading />
-    </mesh>
-    <mesh position={[1.2, 0.06, 1.5]}>
-      <cylinderGeometry args={[0.16, 0.12, 0.12, 8]} />
-      <meshStandardMaterial color={PALETTE.bowl} flatShading />
-    </mesh>
-    {present ? <Monster position={[0.4, 0.1, 0.9]} hurt={hurt} /> : null}
-  </>
-);
+/** 宙に浮かぶ島の家。小屋と畑、寝床と皿、ダンジョンの入口がある。モンスターは入口から出かけ、入口から帰ってくる */
+export const HomeScene = ({ stage, mood, lighting }: HomeSceneProps) => {
+  // 帰りを待つ間は、昼でも玄関のランタンを灯しておく
+  const lanternLit = stage.act === "home" ? lighting.lamp : Math.max(lighting.lamp, 0.8);
+  return (
+    <>
+      <FramedCamera />
+      <Sky lighting={lighting} />
+      <Suspense fallback={null}>
+        <HomeModel lamp={lighting.lamp} lantern={lanternLit} />
+      </Suspense>
+      <GateGlow />
+      <Suspense fallback={null}>
+        <Monster stage={stage} mood={mood} />
+      </Suspense>
+    </>
+  );
+};
