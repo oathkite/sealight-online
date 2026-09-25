@@ -3,6 +3,7 @@ import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, type AnimationAction, type Group, type Object3D } from "three";
 import { poseAt, type Clip, type Mood } from "./stage";
+import { DRACO_PATH } from "./HomeModel";
 import type { Stage } from "./useStage";
 
 const MODEL_URL = "/models/monster.glb";
@@ -37,7 +38,7 @@ type MonsterProps = {
  */
 export const Monster = ({ stage, mood }: MonsterProps) => {
   const group = useRef<Group>(null);
-  const { scene, animations } = useGLTF(MODEL_URL);
+  const { scene, animations } = useGLTF(MODEL_URL, DRACO_PATH);
   const { actions } = useAnimations(animations, group);
   const parts = useRef<Accessories>({ bandage: [], sack: [] });
   // 影を落とす設定をして、包帯と荷物袋の部品を一度だけ探しておく
@@ -78,4 +79,4 @@ export const Monster = ({ stage, mood }: MonsterProps) => {
   );
 };
 
-useGLTF.preload(MODEL_URL);
+useGLTF.preload(MODEL_URL, DRACO_PATH);

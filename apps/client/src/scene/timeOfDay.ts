@@ -1,8 +1,6 @@
-/** 空と光の色。遊んでいる人の時計に合わせて、家の場面の空が移り変わる */
+/** 光と霞の色。遊んでいる人の時計に合わせて、家の場面が移り変わる */
 export type Lighting = {
-  readonly skyTop: string;
-  readonly skyBottom: string;
-  /** 遠くを霞ませる色。空の下の方の色に合わせる */
+  /** 遠くを霞ませる色。背景もこの色にして、平野が遠くで空気に溶けるようにする */
   readonly fog: string;
   readonly sunColor: string;
   readonly sunIntensity: number;
@@ -12,34 +10,30 @@ export type Lighting = {
   readonly hemiIntensity: number;
   /** 窓と灯りのともり具合（0〜1） */
   readonly lamp: number;
-  /** 星の見え具合（0〜1） */
-  readonly stars: number;
 };
 
-type Key = Omit<Lighting, "sunPosition" | "fog"> & { readonly hour: number };
+type Key = Omit<Lighting, "sunPosition"> & { readonly hour: number };
 
 const NIGHT = {
-  skyTop: "#0a0f2c",
-  skyBottom: "#2b2b5c",
+  fog: "#2b2b5c",
   sunColor: "#8ea2ff",
   sunIntensity: 0.45,
   hemiSky: "#5a6ab0",
   hemiGround: "#16142a",
   hemiIntensity: 0.55,
   lamp: 1,
-  stars: 1,
 } as const;
 
 /** 時刻ごとの見本。間の時刻は前後の見本を混ぜる */
 const KEYS: readonly Key[] = [
   { hour: 0, ...NIGHT },
   { hour: 4.5, ...NIGHT },
-  { hour: 6, skyTop: "#2d3a78", skyBottom: "#f0a58a", sunColor: "#ffb48a", sunIntensity: 0.9, hemiSky: "#9aa8e0", hemiGround: "#3a2e3e", hemiIntensity: 0.8, lamp: 0.5, stars: 0.2 },
-  { hour: 8, skyTop: "#5b98dc", skyBottom: "#d6e8f2", sunColor: "#fff0d4", sunIntensity: 1.7, hemiSky: "#dfeeff", hemiGround: "#4a4a3a", hemiIntensity: 1.05, lamp: 0, stars: 0 },
-  { hour: 13, skyTop: "#4f97e2", skyBottom: "#dcefff", sunColor: "#fffaf0", sunIntensity: 2, hemiSky: "#eef6ff", hemiGround: "#51513e", hemiIntensity: 1.15, lamp: 0, stars: 0 },
-  { hour: 16.5, skyTop: "#6592d0", skyBottom: "#f4d6a8", sunColor: "#ffdca4", sunIntensity: 1.7, hemiSky: "#f2e4d0", hemiGround: "#4d4234", hemiIntensity: 1, lamp: 0, stars: 0 },
-  { hour: 18.2, skyTop: "#3a4690", skyBottom: "#f7955f", sunColor: "#ff8f52", sunIntensity: 1.25, hemiSky: "#d8a6b8", hemiGround: "#3a2a38", hemiIntensity: 0.85, lamp: 0.7, stars: 0.1 },
-  { hour: 19.6, skyTop: "#1b2058", skyBottom: "#83568a", sunColor: "#b48cdc", sunIntensity: 0.6, hemiSky: "#7a70b8", hemiGround: "#1e1a30", hemiIntensity: 0.65, lamp: 1, stars: 0.6 },
+  { hour: 6, fog: "#f0a58a", sunColor: "#ffb48a", sunIntensity: 0.9, hemiSky: "#9aa8e0", hemiGround: "#3a2e3e", hemiIntensity: 0.8, lamp: 0.5 },
+  { hour: 8, fog: "#d6e8f2", sunColor: "#fff0d4", sunIntensity: 1.7, hemiSky: "#dfeeff", hemiGround: "#4a4a3a", hemiIntensity: 1.05, lamp: 0 },
+  { hour: 13, fog: "#dcefff", sunColor: "#fffaf0", sunIntensity: 2, hemiSky: "#eef6ff", hemiGround: "#51513e", hemiIntensity: 1.15, lamp: 0 },
+  { hour: 16.5, fog: "#f4d6a8", sunColor: "#ffdca4", sunIntensity: 1.7, hemiSky: "#f2e4d0", hemiGround: "#4d4234", hemiIntensity: 1, lamp: 0 },
+  { hour: 18.2, fog: "#f7955f", sunColor: "#ff8f52", sunIntensity: 1.25, hemiSky: "#d8a6b8", hemiGround: "#3a2a38", hemiIntensity: 0.85, lamp: 0.7 },
+  { hour: 19.6, fog: "#83568a", sunColor: "#b48cdc", sunIntensity: 0.6, hemiSky: "#7a70b8", hemiGround: "#1e1a30", hemiIntensity: 0.65, lamp: 1 },
   { hour: 21, ...NIGHT },
   { hour: 24, ...NIGHT },
 ];
@@ -83,11 +77,8 @@ export const lightingAt = (hour: number): Lighting => {
   const next = KEYS[index] ?? NIGHT_KEY_END;
   const prev = KEYS[index - 1] ?? KEYS[0] ?? NIGHT_KEY_END;
   const t = next.hour === prev.hour ? 0 : (h - prev.hour) / (next.hour - prev.hour);
-  const skyBottom = mixHex(prev.skyBottom, next.skyBottom, t);
   return {
-    skyTop: mixHex(prev.skyTop, next.skyTop, t),
-    skyBottom,
-    fog: skyBottom,
+    fog: mixHex(prev.fog, next.fog, t),
     sunColor: mixHex(prev.sunColor, next.sunColor, t),
     sunIntensity: mix(prev.sunIntensity, next.sunIntensity, t),
     sunPosition: sunPositionAt(h),
@@ -95,6 +86,5 @@ export const lightingAt = (hour: number): Lighting => {
     hemiGround: mixHex(prev.hemiGround, next.hemiGround, t),
     hemiIntensity: mix(prev.hemiIntensity, next.hemiIntensity, t),
     lamp: mix(prev.lamp, next.lamp, t),
-    stars: mix(prev.stars, next.stars, t),
   };
 };

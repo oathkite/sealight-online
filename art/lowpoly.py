@@ -49,6 +49,9 @@ COLORS = {
     "metal": "#ffd27a",
 }
 
+# 粘土の中で、つやを残すもの（ビーズの目、水、金具）
+GLOSSY = {"eye": 0.25, "eye_shine": 0.2, "water": 0.15, "metal": 0.35}
+
 # ゲーム側で明るさを変える（名前で探して emissiveIntensity を動かす）
 GLOW = {
     "window": ("#ffcf7a", 0.2),
@@ -94,7 +97,9 @@ def material(name):
     else:
         color = COLORS[name]
     bsdf.inputs["Base Color"].default_value = _linear(color)
-    bsdf.inputs["Roughness"].default_value = 0.85
+    # 粘土はつやのない質感。光を柔らかく散らす
+    bsdf.inputs["Roughness"].default_value = GLOSSY.get(name, 0.97)
+    bsdf.inputs["Metallic"].default_value = 0.0
     mat.diffuse_color = _linear(color)
     return mat
 
@@ -140,13 +145,59 @@ def ico(radius, subdivisions=1):
     return bm
 
 
-def place(name, bm, mat, at=(0, 0, 0), turn=0.0, tilt=(0.0, 0.0), scale=(1, 1, 1), parent=None):
-    """形を物体として置く。at はゲームの座標、turn は上下軸まわりの回転、tilt は (x 軸, z 軸) まわりの傾き"""
+# 角を丸める辺の条件。これより鋭く折れた辺だけを丸める（球のように元から丸い形はそのまま）
+SHARP_ANGLE = math.radians(50)
+# これより小さい部品（花の茎、目の光など）は角を丸めず、細分化もしない。
+# 細分化は、先に角を丸めた形にだけかける（丸めずに細分化すると、箱が枕のように縮む）
+MIN_SOFTEN_SIZE = 0.04
+
+
+def _smallest_side(bm):
+    if not bm.verts:
+        return 0.0
+    return min(max(v.co[i] for v in bm.verts) - min(v.co[i] for v in bm.verts) for i in range(3))
+
+
+def round_edges(bm, size):
+    """角の立った辺を丸め、粘土をこねて作ったような柔らかい形にする"""
+    sharp = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle(0) > SHARP_ANGLE]
+    if size < MIN_SOFTEN_SIZE or not sharp:
+        return
+    bmesh.ops.bevel(bm, geom=sharp, offset=min(0.08, size * 0.25), segments=2, profile=0.5, affect="EDGES", clamp_overlap=True)
+
+
+def soften(obj, size):
+    """細分化で角をさらに丸め、粘土をこねたふっくらした形にする。小さな部品はそのまま"""
+    if size < MIN_SOFTEN_SIZE:
+        return
+    modifier = obj.modifiers.new("soften", "SUBSURF")
+    modifier.levels = 1
+    modifier.render_levels = 1
+
+
+def apply_modifiers(objects):
+    """細分化などを形に焼き込む（1 つのメッシュにまとめる前に必要）"""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    for obj in objects:
+        if not obj.modifiers:
+            continue
+        mesh = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph))
+        obj.modifiers.clear()
+        obj.data = mesh
+
+
+def place(name, bm, mat, at=(0, 0, 0), turn=0.0, tilt=(0.0, 0.0), scale=(1, 1, 1), parent=None, bevel=True):
+    """形を物体として置く。at はゲームの座標、turn は上下軸まわりの回転、tilt は (x 軸, z 軸) まわりの傾き。
+    bevel を切ると角を丸めない（地面や道のような大きな面）"""
+    size = _smallest_side(bm)
+    if bevel:
+        round_edges(bm, size)
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
+    # なめらかな陰影にする。手でこねた歪み（roughen）が、指で押したふくらみに見える
     for poly in mesh.polygons:
-        poly.use_smooth = False
+        poly.use_smooth = True
     mesh.materials.append(material(mat))
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.collection.objects.link(obj)
@@ -155,6 +206,8 @@ def place(name, bm, mat, at=(0, 0, 0), turn=0.0, tilt=(0.0, 0.0), scale=(1, 1, 1
     obj.scale = S(*scale)
     if parent is not None:
         obj.parent = parent
+    if bevel:
+        soften(obj, size)
     return obj
 
 
@@ -197,7 +250,7 @@ def _imul(a, b):
     return (a * b) & 0xFFFFFFFF
 
 
-def export_glb(path, root_names):
+def export_glb(path, root_names, vertex_colors=False, compress=False):
     """指定した物体とその子孫だけを glb に書き出す"""
     bpy.ops.object.select_all(action="DESELECT")
     for name in root_names:
@@ -214,6 +267,13 @@ def export_glb(path, root_names):
         export_extras=False,
         export_lights=False,
         export_cameras=False,
+        export_vertex_color="ACTIVE" if vertex_colors else "NONE",
+        # Draco で圧縮する。ゲーム側は public/draco/ の展開プログラムで読む
+        export_draco_mesh_compression_enable=compress,
+        export_draco_mesh_compression_level=7,
+        export_draco_position_quantization=14,
+        export_draco_normal_quantization=10,
+        export_draco_color_quantization=8,
     )
 
 

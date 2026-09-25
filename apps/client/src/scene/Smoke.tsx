@@ -7,7 +7,7 @@ import { PALETTE } from "./palette";
 const PUFFS = 6;
 const CYCLE_SEC = 4.8;
 
-/** 煙突から立ちのぼる煙。丸い煙がふくらみながら風に流れて消える */
+/** 煙突から立ちのぼる煙。綿のように丸い煙がふくらみながら風に流れて消える */
 export const Smoke = ({ origin }: { origin: Vec3 }) => {
   const group = useRef<Group>(null);
 
@@ -27,8 +27,8 @@ export const Smoke = ({ origin }: { origin: Vec3 }) => {
     <group ref={group} position={[...origin]}>
       {Array.from({ length: PUFFS }, (_, i) => (
         <mesh key={i}>
-          <icosahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial color={PALETTE.smoke} transparent depthWrite={false} flatShading />
+          <sphereGeometry args={[1, 12, 10]} />
+          <meshStandardMaterial color={PALETTE.smoke} transparent depthWrite={false} roughness={1} />
         </mesh>
       ))}
     </group>

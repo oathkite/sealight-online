@@ -5,6 +5,8 @@ import { PALETTE } from "./palette";
 import { Smoke } from "./Smoke";
 
 const MODEL_URL = "/models/home.glb";
+/** Draco で圧縮したモデルの展開プログラム（three.js 同梱のものを public/draco/ に置いている） */
+export const DRACO_PATH = "/draco/";
 
 type Vec3 = readonly [number, number, number];
 
@@ -27,7 +29,7 @@ const markerPosition = (root: Object3D, name: string): Vec3 => {
 };
 
 const useHomeModel = () => {
-  const { scene } = useGLTF(MODEL_URL);
+  const { scene } = useGLTF(MODEL_URL, DRACO_PATH);
   return useMemo(() => {
     scene.traverse((obj) => {
       if (!(obj instanceof Mesh)) return;
@@ -56,7 +58,7 @@ type HomeModelProps = {
   readonly lantern: number;
 };
 
-/** Blender で作った家の場面（art/build_home.py）。窓とランタンは時刻と留守に合わせて灯す */
+/** Blender で作った家の場面（art/build_home.py）。接するところの陰は頂点の色に焼き込み済み。窓とランタンは時刻と留守に合わせて灯す */
 export const HomeModel = ({ lamp, lantern }: HomeModelProps) => {
   const model = useHomeModel();
 
@@ -72,4 +74,4 @@ export const HomeModel = ({ lamp, lantern }: HomeModelProps) => {
   );
 };
 
-useGLTF.preload(MODEL_URL);
+useGLTF.preload(MODEL_URL, DRACO_PATH);

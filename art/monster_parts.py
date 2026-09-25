@@ -73,7 +73,7 @@ def build_parts():
         ]
     gem = cone(0.045, 0.0, 0.13, 5)
     parts += [
-        (place("m_gem", gem, "monster_gem", at=(0, BODY_H - 0.04, 0.12), tilt=(0.5, 0.0)), "body"),
+        (place("m_gem", gem, "monster_gem", at=(0, BODY_H - 0.04, 0.12), tilt=(0.5, 0.0), bevel=False), "body"),
         (place("m_tail", cone(0.07, 0.0, 0.2, 5), "monster_dark", at=(0, 0.16, -BODY_R * 0.85), tilt=(-2.0, 0.0)), "tail"),
     ]
     return parts + build_accessories()

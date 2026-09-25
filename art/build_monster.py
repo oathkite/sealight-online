@@ -56,7 +56,7 @@ def main(export=True, preview_path=None, clip="idle", frame=1):
     monster_anim.build_clips(rig)
     if export:
         os.makedirs(os.path.dirname(GLB_PATH), exist_ok=True)
-        export_glb(GLB_PATH, ["monster"])
+        export_glb(GLB_PATH, ["monster"], compress=True)
     if preview_path:
         preview(preview_path, clip, frame)
     os.makedirs(os.path.dirname(BLEND_PATH), exist_ok=True)

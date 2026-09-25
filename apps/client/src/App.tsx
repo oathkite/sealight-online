@@ -7,7 +7,6 @@ import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
 import { FpsProbe } from "@/hud/FpsProbe";
 import { HomeScene } from "@/scene/HomeScene";
-import { SkyBackdrop } from "@/scene/SkyBackdrop";
 import { useStage } from "@/scene/useStage";
 import { useTimeOfDay } from "@/scene/useTimeOfDay";
 import { GamePanel } from "@/screens/GamePanel";
@@ -38,9 +37,8 @@ export const App = () => {
 
   return (
     <main className="app">
-      <SkyBackdrop lighting={lighting} />
       <CrayonFilter />
-      <Canvas flat shadows={SHADOWS ? "percentage" : false} dpr={[1, 1.5]} gl={{ alpha: true }}>
+      <Canvas flat shadows={SHADOWS ? "soft" : false} dpr={[1, 1.5]}>
         <HomeScene stage={stage} mood={mood} lighting={lighting} />
         <FpsProbe onReport={setFps} />
       </Canvas>

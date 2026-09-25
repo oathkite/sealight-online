@@ -11,9 +11,13 @@ _SPOTS_PATH = os.path.join(os.path.dirname(__file__), "..", "apps", "client", "s
 with open(_SPOTS_PATH, encoding="utf-8") as f:
     _DATA = json.load(f)
 
-ISLAND_RADIUS = _DATA["islandRadius"]
+# 庭の広さ。この内側は平らで、草花や石はこの中にだけ置く
+YARD_RADIUS = _DATA["yardRadius"]
 SPOTS = {name: tuple(value) for name, value in _DATA["spots"].items()}
 ROUTE = [tuple(p) for p in _DATA["route"]]
+# 町の場所と、家の前から町へ続く道
+TOWN = tuple(_DATA["town"])
+ROAD = [tuple(p) for p in _DATA["road"]]
 
 # 物を置かない区画（x, z, 半径）
 BLOCKED = [
@@ -23,12 +27,14 @@ BLOCKED = [
     (SPOTS["gate"][0], SPOTS["gate"][2], 0.9),
     (SPOTS["lantern"][0], SPOTS["lantern"][2], 0.4),
     (SPOTS["woodpile"][0], SPOTS["woodpile"][2], 0.6),
+    (SPOTS["pond"][0], SPOTS["pond"][2], 1.4),
     *[(x, z, 0.45) for x, _, z in ROUTE],
+    *[(x, z, 0.7) for x, _, z in ROAD],
 ]
 
 
-def scatter(seed, count, keep_out=(), margin=0.3):
-    """草や花を、家や道を避けて島にばらまく。keep_out は追加で避ける区画"""
+def scatter(seed, count, keep_out=(), margin=0.3, radius=None):
+    """草や花を、家や道を避けて庭にばらまく。keep_out は追加で避ける区画、radius はばらまく範囲"""
     random = rng(seed)
     zones = [*BLOCKED, *keep_out]
     placed = []
@@ -36,7 +42,7 @@ def scatter(seed, count, keep_out=(), margin=0.3):
         if len(placed) >= count:
             break
         angle = random() * math.pi * 2
-        distance = math.sqrt(random()) * (ISLAND_RADIUS - margin)
+        distance = math.sqrt(random()) * ((radius or YARD_RADIUS) - margin)
         x, z = math.cos(angle) * distance, math.sin(angle) * distance
         scale, turn, pick = 0.7 + random() * 0.6, random() * math.pi * 2, random()
         if all(math.hypot(x - zx, z - zz) > r for zx, zz, r in zones):

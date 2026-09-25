@@ -1,4 +1,4 @@
-"""家の場面（宙に浮かぶ島のジオラマ）を作り、ゲーム用の glb に書き出す。
+"""家の場面（町外れの平野のクレイ・ジオラマ）を作り、ゲーム用の glb に書き出す。
 
 Blender MCP か Blender の Python コンソールから実行する:
     import sys; sys.path.insert(0, "<repo>/art"); import build_home; build_home.main()
@@ -13,10 +13,10 @@ import os
 import bpy
 
 import home_hut
-import home_island
+import home_ground
 import home_yard
 from home_layout import SPOTS, route_heading
-from lowpoly import P, clear_scene, export_glb, group, node_of_type
+from lowpoly import P, apply_modifiers, clear_scene, export_glb, group, node_of_type
 
 ART_DIR = os.path.dirname(__file__)
 GLB_PATH = os.path.join(ART_DIR, "..", "apps", "client", "public", "models", "home.glb")
@@ -25,7 +25,7 @@ MARKERS = ("smoke_origin", "lantern_light", "gate_mouth")
 
 
 def build(root):
-    home_island.build(root)
+    home_ground.build(root)
     home_hut.build_hut(root, SPOTS["hut"])
     home_hut.build_lantern(root, SPOTS["lantern"])
     home_hut.build_woodpile(root, SPOTS["woodpile"])
@@ -48,6 +48,7 @@ def flatten(root):
     bpy.context.view_layer.update()
     meshes = [o for o in root.children_recursive if o.type == "MESH"]
     markers = [o for o in root.children_recursive if o.name in MARKERS]
+    apply_modifiers(meshes)
     for obj in meshes + markers:
         _unparent(obj)
     for obj in [o for o in root.children_recursive if o.type == "EMPTY"]:
@@ -64,15 +65,43 @@ def flatten(root):
         obj.parent = root
 
 
+# 物の接するところの陰の届く距離と、いちばん暗いところの明るさ
+AO_DISTANCE = 0.9
+AO_FLOOR = 0.42
+
+
+def bake_ao(obj):
+    """接するところの柔らかい陰（アンビエントオクルージョン）を頂点の色に焼き込む。
+    粘土のジオラマらしさの要。ゲーム側は頂点の色を掛けるだけなので、重くならない"""
+    scene = bpy.context.scene
+    scene.render.engine = "CYCLES"
+    scene.cycles.samples = 48
+    world = scene.world or bpy.data.worlds.new("World")
+    scene.world = world
+    world.light_settings.distance = AO_DISTANCE
+    attribute = obj.data.color_attributes.new("ao", "BYTE_COLOR", "CORNER")
+    obj.data.color_attributes.active_color = attribute
+    scene.render.bake.target = "VERTEX_COLORS"
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.bake(type="AO")
+    # 真っ黒にならないよう、底上げする
+    for item in attribute.data:
+        ao = item.color[0]
+        value = AO_FLOOR + (1 - AO_FLOOR) * ao
+        item.color = (value, value, value, 1.0)
+
+
 def preview_stage():
     """ゲームと同じ向きのカメラと、夕方の光（確認用のレンダリングに使う。書き出さない）"""
     cam_data = bpy.data.cameras.new("preview_camera")
     cam_data.type = "ORTHO"
-    cam_data.ortho_scale = 13
+    cam_data.ortho_scale = 10.5
     cam = bpy.data.objects.new("preview_camera", cam_data)
     bpy.context.collection.objects.link(cam)
     cam.location = P(10, 8.6, 10)
-    direction = P(0, -1.4, 0) - cam.location
+    direction = P(0, -0.2, 0) - cam.location
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     bpy.context.scene.camera = cam
     sun_data = bpy.data.lights.new("preview_sun", "SUN")
@@ -105,9 +134,10 @@ def main(export=True, preview_path=None):
     root = group("home")
     build(root)
     flatten(root)
+    bake_ao(bpy.data.objects["home_static"])
     if export:
         os.makedirs(os.path.dirname(GLB_PATH), exist_ok=True)
-        export_glb(GLB_PATH, ["home"])
+        export_glb(GLB_PATH, ["home"], vertex_colors=True, compress=True)
     preview_stage()
     if preview_path:
         render(preview_path)

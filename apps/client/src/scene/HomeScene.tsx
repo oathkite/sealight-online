@@ -11,13 +11,17 @@ import type { Lighting } from "./timeOfDay";
 import type { Stage } from "./useStage";
 
 /** 画面の短い辺に収める広さ（ワールド単位） */
-const VIEW_SIZE = 12;
+const VIEW_SIZE = 8.5;
 /** PC で右側に出るパネルの幅（index.css の .overlay と合わせる） */
 const PANEL_WIDTH = 576;
 const WIDE = 900;
 
-const EYE = new Vector3(10, 8.6, 10);
-const TARGET = new Vector3(0, -1.4, 0);
+/**
+ * カメラの位置。平行投影なので離しても写る大きさは変わらない。
+ * 縦長の画面で下端の地面がカメラの後ろに回り込まないよう、遠くに置く
+ */
+const EYE = new Vector3(20, 17.2, 20);
+const TARGET = new Vector3(-0.6, 0, 0.6);
 const FORWARD = TARGET.clone().sub(EYE).normalize();
 const RIGHT = FORWARD.clone().cross(new Vector3(0, 1, 0)).normalize();
 const UP = RIGHT.clone().cross(FORWARD).normalize();
@@ -38,13 +42,14 @@ const FramedCamera = () => {
   const eye = EYE.clone().add(offset);
   const target = TARGET.clone().add(offset);
   return (
-    <OrthographicCamera makeDefault zoom={zoom} position={eye} near={0.1} far={60} onUpdate={(c) => c.lookAt(target)} />
+    <OrthographicCamera makeDefault zoom={zoom} position={eye} near={1} far={90} onUpdate={(c) => c.lookAt(target)} />
   );
 };
 
 const Sky = ({ lighting }: { lighting: Lighting }) => (
   <>
-    <fog attach="fog" args={[lighting.fog, 18, 34]} />
+    <color attach="background" args={[lighting.fog]} />
+    <fog attach="fog" args={[lighting.fog, 35, 54]} />
     <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
     <directionalLight
       position={[...lighting.sunPosition]}

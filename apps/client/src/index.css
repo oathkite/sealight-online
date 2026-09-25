@@ -351,30 +351,3 @@ select {
   color: var(--foe);
   font-size: 12px;
 }
-
-/* 3D の後ろの空。時刻に合わせて色が変わる */
-.sky {
-  position: absolute;
-  inset: 0;
-  transition: background 2s linear;
-}
-
-.sky-stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  transition: opacity 2s linear;
-  animation: twinkle 5s ease-in-out infinite alternate;
-}
-
-@keyframes twinkle {
-  from {
-    filter: brightness(0.7);
-  }
-  to {
-    filter: brightness(1.2);
-  }
-}

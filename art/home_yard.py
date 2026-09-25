@@ -98,7 +98,7 @@ def build_gate(parent, at, turn):
         roughen(pillar, 0.02, seed=60 + sx)
         place(f"gate_pillar_{sx}", pillar, "gate_stone", at=(sx * hw, 0, hd - 0.05), parent=gate)
     place("gate_lintel", box(w + 0.6, 0.18, 0.26), "gate_stone", at=(0, 1.03, hd - 0.05), parent=gate)
-    place("gate_gem", ico(0.08, 0), "crystal", at=(0, 1.12, hd + 0.1), parent=gate)
+    place("gate_gem", ico(0.08, 0), "crystal", at=(0, 1.12, hd + 0.1), parent=gate, bevel=False)
     group("gate_mouth", at=(at[0], 0, at[2]), parent=parent)
 
 

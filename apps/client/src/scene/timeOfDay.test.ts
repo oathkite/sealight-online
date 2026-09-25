@@ -27,18 +27,16 @@ describe("hourOf", () => {
 });
 
 describe("lightingAt", () => {
-  it("昼は夜より空も日差しも明るい", () => {
+  it("昼は夜より霞も日差しも明るい", () => {
     const noon = lightingAt(13);
     const midnight = lightingAt(0);
-    expect(luminance(noon.skyTop)).toBeGreaterThan(luminance(midnight.skyTop));
+    expect(luminance(noon.fog)).toBeGreaterThan(luminance(midnight.fog));
     expect(noon.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
   });
 
-  it("夜は家の灯りがともり星が出て、昼は消えている", () => {
+  it("夜は家の灯りがともり、昼は消えている", () => {
     expect(lightingAt(23).lamp).toBe(1);
-    expect(lightingAt(23).stars).toBe(1);
     expect(lightingAt(12).lamp).toBe(0);
-    expect(lightingAt(12).stars).toBe(0);
   });
 
   it("夕方は昼と夜の間で、灯りがともり始める", () => {
@@ -49,7 +47,7 @@ describe("lightingAt", () => {
 
   it("24 時と 0 時は同じ光になる（日付をまたいでも途切れない）", () => {
     expect(lightingAt(24)).toEqual(lightingAt(0));
-    expect(lightingAt(23.99).skyTop).toBe(lightingAt(0).skyTop);
+    expect(lightingAt(23.99).fog).toBe(lightingAt(0).fog);
   });
 
   it("太陽は常に地面より上から照らす（影が裏返らない）", () => {
