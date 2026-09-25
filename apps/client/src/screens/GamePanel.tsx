@@ -10,12 +10,14 @@ type GamePanelProps = {
   readonly busy: boolean;
   /** まだ読んでいない冒険の報告があるか */
   readonly reportUnseen: boolean;
+  /** モンスターが寝床に落ち着いているか（帰りの演出の間は false） */
+  readonly settled: boolean;
   readonly actions: TownActions;
   readonly onCloseReport: () => void;
 };
 
 /** キャラの状態に応じて、画面下のパネルを切り替える */
-export const GamePanel = ({ character, busy, reportUnseen, actions, onCloseReport }: GamePanelProps) => {
+export const GamePanel = ({ character, busy, reportUnseen, settled, actions, onCloseReport }: GamePanelProps) => {
   const { phase, lastExpedition } = character;
   if (phase.type === "exploring") {
     // 留守の間も、倉庫の整理と買い物はできる
@@ -27,6 +29,14 @@ export const GamePanel = ({ character, busy, reportUnseen, actions, onCloseRepor
           <Shop gold={character.gold} busy={busy} onBuy={actions.buy} />
         </section>
       </>
+    );
+  }
+  // 帰ってくる姿を見せている間は、持ち帰ったものも報告もまだ明かさない
+  if (!settled) {
+    return (
+      <section className="panel compact" aria-label="おかえり">
+        <div>足音が聞こえる。帰ってきた！</div>
+      </section>
     );
   }
   if (reportUnseen && lastExpedition) return <Journal result={lastExpedition} onClose={onCloseReport} />;

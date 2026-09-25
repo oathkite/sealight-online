@@ -88,7 +88,7 @@ type HomeSceneProps = {
 /** 宙に浮かぶ島の家。小屋と畑、寝床と皿、ダンジョンの入口がある。モンスターは入口から出かけ、入口から帰ってくる */
 export const HomeScene = ({ stage, mood, lighting }: HomeSceneProps) => {
   // 帰りを待つ間は、昼でも玄関のランタンを灯しておく
-  const lanternLit = stage.act === "home" ? lighting.lamp : Math.max(lighting.lamp, 0.8);
+  const lanternLit = stage.act === "away" ? Math.max(lighting.lamp, 0.8) : lighting.lamp;
   return (
     <>
       <FramedCamera />

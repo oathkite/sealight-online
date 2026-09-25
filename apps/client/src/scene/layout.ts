@@ -26,12 +26,23 @@ export const ROUTE: readonly Vec3[] = spots.route.map(toVec3);
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
-/** 道のりの割合 t（0〜1）の位置と、進む向き（y 軸まわりの角度） */
-export const alongRoute = (route: readonly Vec3[], t: number): { readonly position: Vec3; readonly heading: number } => {
+const segmentLengths = new WeakMap<readonly Vec3[], readonly number[]>();
+
+/** 道の区間ごとの長さ。毎フレーム呼ばれるので、道ごとに一度だけ計算する */
+const lengthsOf = (route: readonly Vec3[]): readonly number[] => {
+  const cached = segmentLengths.get(route);
+  if (cached) return cached;
   const lengths = route.slice(1).map((p, i) => {
     const q = route[i] ?? p;
     return Math.hypot(p[0] - q[0], p[2] - q[2]);
   });
+  segmentLengths.set(route, lengths);
+  return lengths;
+};
+
+/** 道のりの割合 t（0〜1）の位置と、進む向き（y 軸まわりの角度） */
+export const alongRoute = (route: readonly Vec3[], t: number): { readonly position: Vec3; readonly heading: number } => {
+  const lengths = lengthsOf(route);
   const total = lengths.reduce((sum, l) => sum + l, 0);
   let remaining = Math.min(1, Math.max(0, t)) * total;
   for (let i = 0; i < lengths.length; i += 1) {
