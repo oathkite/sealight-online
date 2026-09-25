@@ -107,6 +107,17 @@ describe("returnFromExpedition", () => {
     expect(second.gold).toBe(again.state.gold + again.result.outcome.gold);
   });
 
+  it("倒れたことのある階でも、初めて無事に帰ったときはご褒美がもらえる", () => {
+    const fainted = depart(weak(), 12, 2);
+    const afterFaint = ok(returnFromExpedition(fainted.state, fainted.result));
+    const target = afterFaint.bestDepth;
+    const { state, result } = depart({ ...afterFaint, stats: { str: 30, vit: 30, luk: 0 } }, target, 6);
+    const back = ok(returnFromExpedition(state, result));
+    expect(result.outcome.status).toBe("returned");
+    expect(back.gold).toBeGreaterThan(state.gold + result.outcome.gold);
+    expect(back.clearedDepth).toBe(target);
+  });
+
   it("倒れると拾ったものと持たせた食料を失うが、経験と地図は残る", () => {
     const base = weak();
     const { state, result } = depart(base, 12, 2);

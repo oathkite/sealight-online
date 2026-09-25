@@ -4,7 +4,7 @@ import { maxHpFor, type Stats } from "./fighter";
 import type { Equipment } from "./items";
 
 /** 保存形式の版。形を変えたら上げ、古い版のキャラは作り直す */
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 export type Tactics = {
   /** HP がこの割合（%）を下回ったらポーションを飲む。0 なら飲まない */
@@ -42,7 +42,10 @@ export type CharacterState = {
   readonly maps: MapKnowledge;
   readonly phase: Phase;
   readonly lastExpedition: ExpeditionResult | null;
+  /** 到達した最も深い階（倒れた冒険も含む） */
   readonly bestDepth: number;
+  /** 無事に帰ってきた冒険の、最も深い目標の階 */
+  readonly clearedDepth: number;
 };
 
 export const INITIAL_STATS: Stats = { str: 2, vit: 2, luk: 1 };
@@ -74,4 +77,5 @@ export const createCharacter = (): CharacterState => ({
   phase: { type: "town" },
   lastExpedition: null,
   bestDepth: 0,
+  clearedDepth: 0,
 });

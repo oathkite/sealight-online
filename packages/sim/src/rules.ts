@@ -109,9 +109,10 @@ export const returnFromExpedition = (state: CharacterState, result: ExpeditionRe
   };
   if (outcome.status === "fainted") return success(grown);
 
-  const firstReach = input.target > state.bestDepth ? input.target * FIRST_REACH_GOLD_PER_DEPTH : 0;
+  const firstReach = input.target > state.clearedDepth ? input.target * FIRST_REACH_GOLD_PER_DEPTH : 0;
   return success({
     ...grown,
+    clearedDepth: Math.max(state.clearedDepth, input.target),
     stash: [...state.stash, ...outcome.items],
     gold: state.gold + outcome.gold + firstReach,
     potions: state.potions + outcome.potions,

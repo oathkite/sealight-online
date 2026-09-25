@@ -36,6 +36,8 @@ export type BattleNote = {
   readonly taken: number;
   /** こちらが攻撃した回数。多いほど攻撃が通りにくかった */
   readonly hits: number;
+  /** 戦いの中で飲んだポーションの数 */
+  readonly potions: number;
 };
 
 export type Journal = {
@@ -135,7 +137,7 @@ const battleNotes = (events: readonly ExpeditionEvent[]): readonly BattleNote[] 
   const notes: Mutable<BattleNote>[] = [];
   for (const e of events) {
     if (e.type === "encounter") {
-      notes.push({ depth: e.depth, foe: e.foe.name, hpBefore: e.hp, hpAfter: e.hp, taken: 0, hits: 0 });
+      notes.push({ depth: e.depth, foe: e.foe.name, hpBefore: e.hp, hpAfter: e.hp, taken: 0, hits: 0, potions: 0 });
       continue;
     }
     const note = notes.at(-1);
@@ -145,7 +147,10 @@ const battleNotes = (events: readonly ExpeditionEvent[]): readonly BattleNote[] 
       note.taken += e.damage;
       note.hpAfter = e.hp;
     }
-    if (e.type === "potion") note.hpAfter = e.hp;
+    if (e.type === "potion") {
+      note.potions += 1;
+      note.hpAfter = e.hp;
+    }
   }
   return notes;
 };

@@ -70,7 +70,7 @@ describe("buildJournal", () => {
   });
 
   it("一番苦しかった戦いを、戦いの前後の HP と一緒に取り出す", () => {
-    expect(journal.hardest).toEqual({ depth: 2, foe: "光るスライム", hpBefore: 36, hpAfter: 16, taken: 20, hits: 1 });
+    expect(journal.hardest).toEqual({ depth: 2, foe: "光るスライム", hpBefore: 36, hpAfter: 16, taken: 20, hits: 1, potions: 0 });
   });
 
   it("一番低かった HP の割合から、余裕を判定する", () => {
@@ -92,7 +92,7 @@ describe("buildJournal", () => {
     expect(fainted.margin).toBe("failed");
     expect(fainted.rows[0]?.death).toBe("battle");
     expect(fainted.rows[0]?.hearts).toBe(0);
-    expect(fainted.final).toEqual({ depth: 1, foe: "スライム", hpBefore: 10, hpAfter: 0, taken: 10, hits: 0 });
+    expect(fainted.final).toEqual({ depth: 1, foe: "スライム", hpBefore: 10, hpAfter: 0, taken: 10, hits: 0, potions: 0 });
   });
 
   it("荷物がいっぱいで置いてきたもの、飢えも行に残る", () => {
@@ -107,5 +107,23 @@ describe("buildJournal", () => {
     ).rows[0];
     expect(row?.starving).toBe(true);
     expect(row?.loot).toEqual([{ source: "chest", loot: { type: "item", item: sword }, dropped: true }]);
+  });
+});
+
+describe("戦いの記録とポーション", () => {
+  it("戦いの中で飲んだポーションの数を残す（受けたダメージが戦う前の HP を超える理由が分かる）", () => {
+    const journal = buildJournal(
+      [
+        { type: "floor", t: 0, depth: 6, direction: "down", hp: 13, rations: 0 },
+        { type: "encounter", t: 10, depth: 6, foe: slime, hp: 13 },
+        { type: "potion", hp: 33 },
+        { type: "attack", by: "foe", damage: 20, hp: 13 },
+        { type: "potion", hp: 33 },
+        { type: "attack", by: "foe", damage: 33, hp: 0 },
+        { type: "death", t: 20, depth: 6, cause: "battle" },
+      ],
+      { maxHp: 40, status: "fainted" },
+    );
+    expect(journal.final).toEqual({ depth: 6, foe: "スライム", hpBefore: 13, hpAfter: 0, taken: 53, hits: 0, potions: 2 });
   });
 });
