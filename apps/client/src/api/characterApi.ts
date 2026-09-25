@@ -1,4 +1,4 @@
-import type { CharacterState, Decision, ShopSku, Slot, StatKey, Tactics } from "@sealight/sim";
+import type { CharacterState, ShopSku, Slot, StatKey, Tactics } from "@sealight/sim";
 import { characterSchema, errorSchema } from "./schema";
 
 // 本番は画面と API を同じ Worker から配信するので相対パスで呼ぶ。
@@ -9,8 +9,7 @@ export type ApiResult = { readonly ok: true; readonly value: CharacterState } | 
 
 export type CharacterApi = {
   readonly fetchMe: () => Promise<ApiResult>;
-  readonly startLamp: () => Promise<ApiResult>;
-  readonly decide: (decision: Decision) => Promise<ApiResult>;
+  readonly explore: (target: number, rations: number) => Promise<ApiResult>;
   readonly allocate: (stat: StatKey) => Promise<ApiResult>;
   readonly equip: (itemId: string) => Promise<ApiResult>;
   readonly unequip: (slot: Slot) => Promise<ApiResult>;
@@ -46,8 +45,7 @@ export const createCharacterApi = (characterId: string, baseUrl: string = API_UR
 
   return {
     fetchMe: () => call("GET", "/me"),
-    startLamp: () => call("POST", "/me/explore"),
-    decide: (decision) => call("POST", "/me/decide", { decision }),
+    explore: (target, rations) => call("POST", "/me/explore", { target, rations }),
     allocate: (stat) => call("POST", "/me/stats", { stat }),
     equip: (itemId) => call("POST", "/me/equip", { itemId }),
     unequip: (slot) => call("POST", "/me/unequip", { slot }),

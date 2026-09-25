@@ -11,6 +11,7 @@ const SKUS = Object.keys(SHOP) as readonly ShopSku[];
 const productLabel = (sku: ShopSku): string => {
   const product = SHOP[sku];
   if (product.type === "potion") return "ポーション（HP を半分回復）";
+  if (product.type === "ration") return "保存食（冒険の食料）";
   return `${product.name}（${product.slot === "weapon" ? "攻" : "防"}+${product.power}）`;
 };
 

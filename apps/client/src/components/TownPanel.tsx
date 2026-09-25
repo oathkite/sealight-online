@@ -3,6 +3,7 @@ import { CharacterSheet } from "./CharacterSheet";
 import { Gear } from "./Gear";
 import { Shop } from "./Shop";
 import { TacticsForm } from "./TacticsForm";
+import { TargetPicker } from "./TargetPicker";
 
 export type TownActions = {
   readonly allocate: (stat: StatKey) => void;
@@ -11,7 +12,7 @@ export type TownActions = {
   readonly sell: (itemId: string) => void;
   readonly buy: (sku: ShopSku) => void;
   readonly setTactics: (tactics: Tactics) => void;
-  readonly startLamp: () => void;
+  readonly depart: (target: number, rations: number) => void;
 };
 
 type TownPanelProps = {
@@ -20,17 +21,16 @@ type TownPanelProps = {
   readonly actions: TownActions;
 };
 
-/** 街：準備を整えて、探索に出る */
+/** 家：準備を整えて、目標の階を決めて送り出す */
 export const TownPanel = ({ character, busy, actions }: TownPanelProps) => (
-  <section className="panel town" aria-label="街">
+  <section className="panel town" aria-label="家">
     <CharacterSheet character={character} busy={busy} onAllocate={actions.allocate} />
-    <button type="button" className="primary" disabled={busy} onClick={actions.startLamp}>
-      探索に出る（地下 1 階・25 分）
-    </button>
+    <TargetPicker character={character} busy={busy} onDepart={actions.depart} />
     <div className="town-columns">
       <Gear
         character={character}
         busy={busy}
+        canEquip
         onEquip={actions.equip}
         onUnequip={actions.unequip}
         onSell={actions.sell}

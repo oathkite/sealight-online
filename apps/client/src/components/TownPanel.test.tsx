@@ -12,7 +12,7 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
     sell: vi.fn(),
     buy: vi.fn(),
     setTactics: vi.fn(),
-    startLamp: vi.fn(),
+    depart: vi.fn(),
   };
   const character: CharacterState = {
     ...createCharacter(),
@@ -24,13 +24,14 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
 };
 
 describe("TownPanel", () => {
-  it("探索に出るボタンで探索を始める", async () => {
+  it("目標を決めて送り出す", async () => {
     const { actions, user } = setup();
-    await user.click(screen.getByRole("button", { name: /探索に出る/ }));
-    expect(actions.startLamp).toHaveBeenCalled();
+    await user.selectOptions(screen.getByLabelText("目標の階"), "2");
+    await user.click(screen.getByRole("button", { name: /送り出す/ }));
+    expect(actions.depart).toHaveBeenCalledWith(2, expect.any(Number));
   });
 
-  it("ポイントがあればステータスを上げられる", async () => {
+  it("ポイントがあればステータスを上げられる。なければボタンは出ない", async () => {
     const { actions, user } = setup();
     await user.click(screen.getByRole("button", { name: "力を上げる" }));
     expect(actions.allocate).toHaveBeenCalledWith("str");
@@ -51,22 +52,16 @@ describe("TownPanel", () => {
     expect(actions.sell).toHaveBeenCalledWith("st1");
   });
 
-  it("店で商品を買える。お金が足りない商品は押せない", async () => {
+  it("店で食料やポーションを買える。お金が足りない商品は押せない", async () => {
     const { actions, user } = setup({ gold: 20 });
-    await user.click(screen.getByRole("button", { name: /ポーション/ }));
-    expect(actions.buy).toHaveBeenCalledWith("potion");
+    await user.click(screen.getByRole("button", { name: /保存食/ }));
+    expect(actions.buy).toHaveBeenCalledWith("ration");
     expect(screen.getByRole("button", { name: /鋼の剣/ })).toBeDisabled();
-  });
-
-  it("作戦の優先を変えると、変更後の作戦を渡す", async () => {
-    const { actions, user } = setup();
-    await user.selectOptions(screen.getByLabelText("優先"), "treasure");
-    expect(actions.setTactics).toHaveBeenCalledWith({ potionThreshold: 30, priority: "treasure" });
   });
 
   it("ポーションを飲む HP を変えられる", async () => {
     const { actions, user } = setup();
     await user.selectOptions(screen.getByLabelText("ポーションを飲む HP"), "50");
-    expect(actions.setTactics).toHaveBeenCalledWith({ potionThreshold: 50, priority: "stairs" });
+    expect(actions.setTactics).toHaveBeenCalledWith({ potionThreshold: 50 });
   });
 });

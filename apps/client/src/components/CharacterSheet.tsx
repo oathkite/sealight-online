@@ -8,7 +8,7 @@ type CharacterSheetProps = {
 };
 
 export const CharacterSheet = ({ character, busy, onAllocate }: CharacterSheetProps) => {
-  const { level, xp, stats, hp, gold, potions, unspentPoints, equipment, bestDepth } = character;
+  const { level, xp, stats, gold, potions, rations, unspentPoints, equipment, bestDepth } = character;
   return (
     <section className="sheet" aria-label="キャラクター">
       <div className="sheet-row">
@@ -17,13 +17,12 @@ export const CharacterSheet = ({ character, busy, onAllocate }: CharacterSheetPr
         <span>最深 地下 {bestDepth} 階</span>
       </div>
       <div className="sheet-row">
-        <span>
-          HP {hp} / {maxHpOf(character)}
-        </span>
+        <span>HP {maxHpOf(character)}</span>
         <span>攻 {attackFor(stats, equipment.weapon)}</span>
         <span>防 {defenseFor(stats, equipment.armor)}</span>
         <span>{gold} G</span>
         <span>ポーション {potions}</span>
+        <span>食料 {rations}</span>
       </div>
       <div className="sheet-row">
         {STAT_KEYS.map((key) => (

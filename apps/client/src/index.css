@@ -128,13 +128,6 @@ select {
   text-align: center;
 }
 
-.countdown {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-
 .sheet {
   display: grid;
   gap: 6px;
@@ -193,62 +186,6 @@ select {
   margin-bottom: 8px;
 }
 
-.decision-buttons {
-  display: grid;
-  gap: 8px;
-}
-
-.decision-buttons button {
-  padding: 12px;
-  text-align: left;
-}
-
-.decision-buttons button:first-child {
-  border-color: var(--accent);
-}
-
-.bag ul {
-  display: grid;
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.bar {
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.bar-track {
-  height: 8px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.1);
-  overflow: hidden;
-}
-
-.bar-fill {
-  height: 100%;
-  transition: width 0.2s;
-}
-
-.bar-fill.hp {
-  background: var(--hp);
-}
-
-.bar-fill.foe {
-  background: var(--foe);
-}
-
-.bar-value {
-  font-variant-numeric: tabular-nums;
-}
-
-.log {
-  min-height: 1.4em;
-  margin: 0;
-}
-
 .muted {
   color: var(--muted);
 }
@@ -257,17 +194,102 @@ select {
   color: var(--accent);
 }
 
-.notice {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgb(0 0 0 / 0.5);
-  color: var(--danger);
-}
-
 .error {
   margin: 0;
   padding: 8px 12px;
   border-radius: 10px;
   background: rgb(80 0 0 / 0.7);
+}
+
+.picker {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.picker-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.reaction {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-weight: 700;
+}
+
+.reaction-face {
+  font-size: 24px;
+}
+
+.elapsed {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.journal header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.journal-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.journal-row {
+  display: grid;
+  grid-template-columns: 44px 24px 70px auto 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.journal-row.selected {
+  border-color: var(--accent);
+}
+
+.journal-depth {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal-hearts {
+  color: var(--foe);
+  letter-spacing: 1px;
+}
+
+.journal-events {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.journal-detail,
+.journal-battle,
+.report-items {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.05);
+}
+
+.journal-detail ul,
+.report-items ul {
+  display: grid;
+  gap: 2px;
+}
+
+.journal-battle p,
+.report-items p {
+  margin: 0;
 }

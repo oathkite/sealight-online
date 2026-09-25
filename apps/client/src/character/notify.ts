@@ -2,10 +2,6 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 
-const TITLE = "探索が終わりました";
-const BODY = "結果を確認して、次の行動を決めましょう。";
-const NOTIFICATION_ID = 1;
-
 type Platform = "native" | "tauri" | "web";
 
 const detectPlatform = (): Platform => {
@@ -27,7 +23,7 @@ const requestByPlatform = async (platform: Platform): Promise<boolean> => {
   }
 };
 
-/** 探索を始める前に呼び、通知の許可を取っておく（許可待ちの間に探索が進まないように） */
+/** 送り出すときに呼び、帰ってきたことを知らせる通知の許可を取っておく */
 export const ensureNotificationPermission = async (): Promise<boolean> => {
   try {
     return await requestByPlatform(detectPlatform());
@@ -38,27 +34,24 @@ export const ensureNotificationPermission = async (): Promise<boolean> => {
 };
 
 /**
- * 探索の終了時刻に通知を出す。
- * スマホは OS のローカル通知（アプリが裏にあっても届く）、デスクトップとブラウザはプロセス内のタイマー。
+ * 帰ってきたことを知らせる。帰る時刻は画面に渡されないので、帰ってきたのを確認した時点で出す。
+ * ブラウザではタブを開いている間だけ届く。
  */
-export const scheduleLampEndNotification = async (endsAt: number): Promise<void> => {
-  const delay = endsAt - Date.now();
-  if (delay <= 0) return;
+export const notifyReturn = async (fainted: boolean): Promise<void> => {
+  const title = fainted ? "ボロボロで帰ってきた…" : "無事に帰ってきた！";
+  const body = "冒険の報告を見てみましょう。";
   try {
     const platform = detectPlatform();
     if (platform === "native") {
-      await LocalNotifications.cancel({ notifications: [{ id: NOTIFICATION_ID }] });
-      await LocalNotifications.schedule({
-        notifications: [{ id: NOTIFICATION_ID, title: TITLE, body: BODY, schedule: { at: new Date(endsAt) } }],
-      });
+      await LocalNotifications.schedule({ notifications: [{ id: 1, title, body }] });
       return;
     }
-    const send =
-      platform === "tauri"
-        ? () => sendNotification({ title: TITLE, body: BODY })
-        : () => new Notification(TITLE, { body: BODY });
-    window.setTimeout(send, delay);
+    if (platform === "tauri") {
+      sendNotification({ title, body });
+      return;
+    }
+    if ("Notification" in window && Notification.permission === "granted") new Notification(title, { body });
   } catch (error) {
-    console.warn("通知の予約に失敗しました", error);
+    console.warn("通知を出せませんでした", error);
   }
 };
