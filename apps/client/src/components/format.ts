@@ -1,4 +1,4 @@
-import type { Equipment, LootSource, Margin, Mood, Reaction, Trait } from "@sealight/sim";
+import type { Equipment, LootSource, Margin, Reaction, Trait } from "@sealight/sim";
 
 export const itemLabel = (item: Equipment): string =>
   `${item.rarity === "rare" ? "★" : ""}${item.name}（${item.slot === "weapon" ? "攻" : "防"}+${item.power}）`;
@@ -14,15 +14,13 @@ export const formatDuration = (sec: number): string => {
   return rest === 0 ? `${hours} 時間` : `${hours} 時間 ${rest} 分`;
 };
 
-/** 仮の顔。本番はクレヨン風の絵に置き換える */
-export const MOOD_FACES = { happy: "😀", ok: "🙂", tired: "😅", hurt: "😣", down: "😵" } as const satisfies Record<Mood, string>;
-
+/** 送り出す前の様子。顔の絵（Face）と一緒に出す */
 export const REACTIONS = {
-  eager: { face: "😆", label: "張り切っている" },
-  calm: { face: "🙂", label: "落ち着いている" },
-  nervous: { face: "😟", label: "少し不安そう" },
-  scared: { face: "😨", label: "怯えている" },
-} as const satisfies Record<Reaction, { readonly face: string; readonly label: string }>;
+  eager: "張り切っている",
+  calm: "落ち着いている",
+  nervous: "少し不安そう",
+  scared: "怯えている",
+} as const satisfies Record<Reaction, string>;
 
 export const MARGINS = {
   easy: "楽勝だったみたい",
@@ -32,7 +30,5 @@ export const MARGINS = {
 } as const satisfies Record<Margin, string>;
 
 export const SOURCES = { chest: "宝箱", drop: "敵が落とした", goal: "目標の階の宝" } as const satisfies Record<LootSource, string>;
-
-export const hearts = (count: number): string => "♥".repeat(count) + "♡".repeat(Math.max(0, 5 - count));
 
 export const TRAITS = { swarm: "群れ", armored: "硬い", heavy: "強打", fast: "素早い" } as const satisfies Record<Trait, string>;

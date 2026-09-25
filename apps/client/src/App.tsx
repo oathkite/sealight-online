@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { createCharacterApi } from "@/api/characterApi";
+import { CrayonFilter } from "@/components/icons/Icon";
 import { loadCharacterId } from "@/character/characterId";
 import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
@@ -38,6 +39,7 @@ export const App = () => {
   return (
     <main className="app">
       <SkyBackdrop lighting={lighting} />
+      <CrayonFilter />
       <Canvas flat shadows={SHADOWS ? "percentage" : false} dpr={[1, 1.5]} gl={{ alpha: true }}>
         <HomeScene stage={stage} mood={mood} lighting={lighting} />
         <FpsProbe onReport={setFps} />

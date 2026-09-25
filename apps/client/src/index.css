@@ -223,8 +223,9 @@ select {
   font-weight: 700;
 }
 
-.reaction-face {
-  font-size: 24px;
+.icon {
+  flex: none;
+  vertical-align: middle;
 }
 
 .elapsed {
@@ -234,9 +235,31 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+/* 報告は、罫線の入った紙の絵日記に見せる */
+.journal {
+  --paper: #f6ecd8;
+  --paper-ink: #3a2e28;
+  --paper-line: rgb(120 90 60 / 0.14);
+  --paper-muted: #7a6656;
+  border: 0;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, var(--paper-line) 27px 28px),
+    var(--paper);
+  color: var(--paper-ink);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6) inset,
+    0 10px 30px rgb(0 0 0 / 0.35);
+  backdrop-filter: none;
+}
+
+.journal h2,
+.journal h3 {
+  font-family: "Hiragino Maru Gothic ProN", "Zen Maru Gothic", system-ui, sans-serif;
+}
+
 .journal header p {
   margin: 0;
-  color: var(--muted);
+  color: var(--paper-muted);
 }
 
 .journal-rows {
@@ -246,15 +269,19 @@ select {
 
 .journal-row {
   display: grid;
-  grid-template-columns: 44px 24px 70px auto 1fr;
+  grid-template-columns: 40px 26px 88px auto 1fr;
   gap: 6px;
   align-items: center;
-  padding: 6px 10px;
+  padding: 5px 10px;
+  border: 1.5px dashed rgb(58 46 40 / 0.25);
+  background: rgb(255 255 255 / 0.35);
   text-align: left;
 }
 
 .journal-row.selected {
-  border-color: var(--accent);
+  border-style: solid;
+  border-color: #d88a3a;
+  background: rgb(255 210 122 / 0.3);
 }
 
 .journal-depth {
@@ -262,17 +289,22 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
-.journal-hearts {
-  color: var(--foe);
-  letter-spacing: 1px;
+.heart-meter,
+.journal-bread,
+.journal-foe {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
 }
 
 .journal-events {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--paper-muted);
+  font-size: 13px;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .journal-detail,
@@ -280,7 +312,7 @@ select {
 .report-items {
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgb(255 255 255 / 0.05);
+  background: rgb(255 255 255 / 0.45);
 }
 
 .journal-detail ul,
@@ -289,9 +321,26 @@ select {
   gap: 2px;
 }
 
+.journal-detail li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
 .journal-battle p,
 .report-items p {
   margin: 0;
+}
+
+.journal .trait {
+  background: rgb(242 107 91 / 0.18);
+  color: #b0402f;
+}
+
+.journal button.primary {
+  background: #d88a3a;
+  color: #fff8ec;
 }
 
 .trait {

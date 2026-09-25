@@ -1,5 +1,7 @@
 import type { JournalLoot, JournalRow } from "@sealight/sim";
-import { hearts, itemLabel, MOOD_FACES, SOURCES, TRAITS } from "./format";
+import { itemLabel, SOURCES, TRAITS } from "./format";
+import { Face } from "./icons/Face";
+import { HeartMeter, Icon } from "./icons/Icon";
 
 const DIRECTION = { down: "行き", up: "帰り" } as const;
 
@@ -7,7 +9,10 @@ export const rowTitle = (row: JournalRow): string => `B${row.depth} ${DIRECTION[
 
 const lootLabel = (l: JournalLoot): string => (l.loot.type === "gold" ? `${l.loot.amount} G` : itemLabel(l.loot.item));
 
-/** 断面図の 1 行。仮の絵文字で描く（本番はクレヨン風の絵とアイコン） */
+/** 食料の絵は、多くても 6 つまで並べる */
+const MAX_BREAD = 6;
+
+/** 断面図の 1 行。モンスターの顔、ハート、食料、会った敵と出来事の絵を並べる */
 export const JournalRowView = ({ row, selected, onSelect }: { row: JournalRow; selected: boolean; onSelect: () => void }) => {
   const summary = [
     rowTitle(row),
@@ -24,16 +29,30 @@ export const JournalRowView = ({ row, selected, onSelect }: { row: JournalRow; s
         B{row.depth}
         {row.direction === "down" ? "↓" : "↑"}
       </span>
-      <span aria-hidden="true">{MOOD_FACES[row.mood]}</span>
+      <Face expression={row.mood} size={26} />
       <span className="journal-hearts" aria-hidden="true">
-        {row.death ? "✕" : hearts(row.hearts)}
+        {row.death ? <Icon name="cross" size={18} /> : <HeartMeter count={row.hearts} />}
       </span>
-      <span aria-hidden="true">{"🍞".repeat(Math.min(row.rations, 6))}</span>
+      <span className="journal-bread" aria-hidden="true">
+        {Array.from({ length: Math.min(row.rations, MAX_BREAD) }, (_, i) => (
+          <Icon key={i} name="bread" size={16} />
+        ))}
+      </span>
       <span className="journal-events" aria-hidden="true">
-        {row.foes.map((f) => `${f.rare ? "✨" : ""}${f.name}×${f.count}`).join(" ")}
-        {row.loot.length > 0 ? ` 🎁${row.loot.length}` : ""}
-        {row.starving ? " 🍽️" : ""}
-        {row.turnaround ? " 🚩" : ""}
+        {row.foes.map((f) => (
+          <span key={`${f.kind}-${f.name}`} className="journal-foe">
+            {f.rare ? <Icon name="sparkle" size={15} /> : null}
+            {f.name}×{f.count}
+          </span>
+        ))}
+        {row.loot.length > 0 ? (
+          <span className="journal-foe">
+            <Icon name="chest" size={17} />
+            {row.loot.length}
+          </span>
+        ) : null}
+        {row.starving ? <Icon name="plate" size={17} /> : null}
+        {row.turnaround ? <Icon name="flag" size={17} /> : null}
       </span>
     </button>
   );
@@ -46,7 +65,7 @@ export const JournalRowDetail = ({ row }: { row: JournalRow }) => (
     <ul>
       {row.foes.map((f) => (
         <li key={`${f.kind}-${f.name}`}>
-          {f.rare ? "✨" : ""}
+          {f.rare ? <Icon name="sparkle" size={13} /> : null}
           {f.name} × {f.count}
           {f.traits.map((t) => (
             <span key={t} className="trait">

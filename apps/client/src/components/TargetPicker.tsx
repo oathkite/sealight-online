@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { estimateExpedition, MAX_DEPTH, PACE, reactionFor, type CharacterState } from "@sealight/sim";
 import { formatDuration, REACTIONS } from "./format";
+import { Face } from "./icons/Face";
 
 type TargetPickerProps = {
   readonly character: CharacterState;
@@ -42,7 +43,7 @@ export const TargetPicker = ({ character, busy, onDepart }: TargetPickerProps) =
       }),
     [target, carried, character],
   );
-  const reaction = REACTIONS[reactionFor(estimate.successRate)];
+  const reaction = reactionFor(estimate.successRate);
 
   return (
     <section className="picker" aria-label="送り出す準備">
@@ -69,10 +70,8 @@ export const TargetPicker = ({ character, busy, onDepart }: TargetPickerProps) =
         </label>
       </div>
       <p className="reaction">
-        <span className="reaction-face" aria-hidden="true">
-          {reaction.face}
-        </span>
-        {reaction.label}
+        <Face expression={reaction} size={30} />
+        {REACTIONS[reaction]}
       </p>
       <p className="muted">
         だいたい {formatDuration(estimate.minSec)}〜{formatDuration(estimate.maxSec)} で帰ってきそう
