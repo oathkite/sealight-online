@@ -79,7 +79,33 @@ describe("hull", () => {
     const mesh = hullMesh(supportEllipsoid([1, 1, 1]), { color: [0.2, 0.4, 0.6], material: 5 });
     const v = Array.from(mesh.vertices.slice(0, VERTEX_FLOATS));
     expect(Math.hypot(v[3] ?? 0, v[4] ?? 0, v[5] ?? 0)).toBeCloseTo(1);
-    expectClose(v.slice(6), [0.2, 0.4, 0.6, 5], 5);
+    expectClose(v.slice(6, 10), [0.2, 0.4, 0.6, 5], 5);
+  });
+
+  it("模様の番号を頂点ごとに持つ（省くと 0）", () => {
+    const plain = hullMesh(supportEllipsoid([1, 1, 1]), { color: [1, 1, 1], material: 0 });
+    const wood = hullMesh(supportEllipsoid([1, 1, 1]), { color: [1, 1, 1], material: 0, pattern: 7 });
+    expect(plain.vertices[10]).toBe(0);
+    expect(wood.vertices[10]).toBe(7);
+  });
+
+  it("風で揺れる重みは、形の下端で base、上端で tip になる", () => {
+    const mesh = hullMesh(supportBox([0.1, 1, 0.1]), { color: [1, 1, 1], material: 0, sway: [0, 1], detail: 2 });
+    let bottom = 1;
+    let top = 0;
+    for (let i = 0; i < mesh.vertices.length; i += VERTEX_FLOATS) {
+      const y = mesh.vertices[i + 1] ?? 0;
+      const w = mesh.vertices[i + 11] ?? -1;
+      if (y < -0.99) bottom = Math.min(bottom, w);
+      if (y > 0.99) top = Math.max(top, w);
+    }
+    expect(bottom).toBeCloseTo(0);
+    expect(top).toBeCloseTo(1);
+  });
+
+  it("揺れの重みを指定しなければ揺れない", () => {
+    const mesh = hullMesh(supportEllipsoid([1, 1, 1]), { color: [1, 1, 1], material: 0 });
+    for (let i = 11; i < mesh.vertices.length; i += VERTEX_FLOATS) expect(mesh.vertices[i]).toBe(0);
   });
 });
 
@@ -96,9 +122,10 @@ describe("createMeshBuilder", () => {
 
   it("高さのある地面は格子の頂点を並べ、平らなら法線は真上", () => {
     const builder = createMeshBuilder();
-    builder.heightfield({ min: [-1, -1], max: [1, 1], segments: 4, height: () => 0, color: [0, 1, 0], material: 3 });
+    builder.heightfield({ min: [-1, -1], max: [1, 1], segments: 4, height: () => 0, color: [0, 1, 0], material: 3, pattern: 2 });
     const mesh = builder.build();
     expect(mesh.vertices.length / VERTEX_FLOATS).toBe(25);
+    expect(mesh.vertices[10]).toBe(2);
     expect(mesh.indices.length).toBe(4 * 4 * 6);
     expectClose(Array.from(mesh.vertices.slice(3, 6)), [0, 1, 0]);
   });

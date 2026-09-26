@@ -50,7 +50,7 @@ export type GpuMesh = {
 
 const vertexAttributes = (gl: WebGL2RenderingContext): void => {
   const stride = VERTEX_FLOATS * 4;
-  for (const [location, size, offset] of [[0, 3, 0], [1, 3, 12], [2, 3, 24], [3, 1, 36]] as const) {
+  for (const [location, size, offset] of [[0, 3, 0], [1, 3, 12], [2, 3, 24], [3, 1, 36], [6, 1, 40], [7, 1, 44]] as const) {
     gl.enableVertexAttribArray(location);
     gl.vertexAttribPointer(location, size, gl.FLOAT, false, stride, offset);
   }

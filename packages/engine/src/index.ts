@@ -22,8 +22,12 @@ export {
   type TileLayer,
 } from "./grid/grid";
 export { createLoop, createResolutionGovernor, type FrameInfo, type FrameResult, type Scheduler } from "./loop/loop";
+export { clothMesh, createCloth, stepCloth, type Cloth, type ClothMeshData, type ClothSpec } from "./physics/cloth";
 export { compose, composeEuler, identity, multiply, normalMatrix, type Mat3, type Mat4 } from "./math/mat4";
 export { add, cross, dot, length, lerp, normalize, scale, sub, type Vec3 } from "./math/vec3";
+export { readDevice } from "./device";
+export { detectTier, qualityFor, type DeviceInfo, type Quality, type QualityTier } from "./quality";
 export { toLinear } from "./render/frame";
-export { MATERIAL, PARTICLE_FLOATS, type Environment, type FrameInput, type ModelInstance, type ParticleSet, type PointLight, type Water } from "./render/types";
+export { MAX_PATTERNS, patternIndex, type PatternDef } from "./render/patterns";
+export { FOLIAGE_FLOATS, MATERIAL, PARTICLE_FLOATS, type ClothDraw, type Environment, type Foliage, type FrameInput, type ModelInstance, type ParticleSet, type PointLight, type Water, type Wind } from "./render/types";
 export { collectDrawables, node, type Drawable, type MeshId, type NodeDef, type NodePose, type Pose, type Transform } from "./scene/scene";

@@ -3,8 +3,8 @@ import { rotate, unrotate, type Rotation } from "./rotation";
 import { sphereLevel } from "./sphere";
 import type { Support } from "./support";
 
-/** 1 頂点の並び：位置 3、法線 3、色 3（sRGB）、材質 1 */
-export const VERTEX_FLOATS = 10;
+/** 1 頂点の並び：位置 3、法線 3、色 3（sRGB）、材質 1、模様 1、風で揺れる重み 1 */
+export const VERTEX_FLOATS = 12;
 
 export type Color = readonly [number, number, number];
 
@@ -17,6 +17,10 @@ export type HullOptions = {
   readonly color: Color;
   /** 材質の番号。シェーダーが塗り方を切り替える */
   readonly material: number;
+  /** 模様の番号（テクスチャの層）。0 は模様なし */
+  readonly pattern?: number;
+  /** 風で揺れる重み。形の下端で [0]、上端で [1] になり、間は高さに比例する */
+  readonly sway?: readonly [base: number, tip: number];
   /** 丸みの半径。支持点の形の外側にこの分だけふくらむ */
   readonly radius?: number;
   /** 球の細かさ（0〜3）。省くと大きさから決める */
@@ -34,6 +38,7 @@ export type HeightfieldOptions = {
   readonly height: (x: number, z: number) => number;
   readonly color: Color;
   readonly material: number;
+  readonly pattern?: number;
 };
 
 export type DiscOptions = {
@@ -42,6 +47,7 @@ export type DiscOptions = {
   readonly segments: number;
   readonly color: Color;
   readonly material: number;
+  readonly pattern?: number;
 };
 
 /** 小さな物ほど粗い球から作り、頂点を節約する */
@@ -58,22 +64,29 @@ export const createMeshBuilder = () => {
   const vertices: number[] = [];
   const indices: number[] = [];
   const count = (): number => vertices.length / VERTEX_FLOATS;
-  const vertex = (p: Vec3, n: Vec3, color: Color, material: number): void => {
-    vertices.push(p[0], p[1], p[2], n[0], n[1], n[2], color[0], color[1], color[2], material);
+  const vertex = (p: Vec3, n: Vec3, color: Color, material: number, pattern: number, sway: number): void => {
+    vertices.push(p[0], p[1], p[2], n[0], n[1], n[2], color[0], color[1], color[2], material, pattern, sway);
   };
 
   const hull = (support: Support, options: HullOptions): void => {
-    const { radius = 0, position = [0, 0, 0], rotation, color, material } = options;
+    const { radius = 0, position = [0, 0, 0], rotation, color, material, pattern = 0, sway = [0, 0] } = options;
     const sphere = sphereLevel(options.detail ?? detailFor(options.size ?? 0.5));
     const base = count();
+    // 揺れの重みは、形そのものの上下（回す前の y）で決める
+    const bottom = support([0, -1, 0])[1] - radius;
+    const top = support([0, 1, 0])[1] + radius;
     for (const d of sphere.vertices) {
-      const s = rotation ? rotate(rotation, support(unrotate(rotation, d))) : support(d);
-      vertex([position[0] + s[0] + d[0] * radius, position[1] + s[1] + d[1] * radius, position[2] + s[2] + d[2] * radius], d, color, material);
+      const local = rotation ? unrotate(rotation, d) : d;
+      const ls = support(local);
+      const s = rotation ? rotate(rotation, ls) : ls;
+      const t = top > bottom ? (ls[1] + local[1] * radius - bottom) / (top - bottom) : 0;
+      const weight = sway[0] + (sway[1] - sway[0]) * t;
+      vertex([position[0] + s[0] + d[0] * radius, position[1] + s[1] + d[1] * radius, position[2] + s[2] + d[2] * radius], d, color, material, pattern, weight);
     }
     for (const [a, b, c] of sphere.triangles) indices.push(base + a, base + b, base + c);
   };
 
-  const heightfield = ({ min, max, segments, height, color, material }: HeightfieldOptions): void => {
+  const heightfield = ({ min, max, segments, height, color, material, pattern = 0 }: HeightfieldOptions): void => {
     const base = count();
     const step = [(max[0] - min[0]) / segments, (max[1] - min[1]) / segments];
     const e = Math.min(step[0] ?? 1, step[1] ?? 1) * 0.25;
@@ -82,7 +95,7 @@ export const createMeshBuilder = () => {
         const x = min[0] + i * (step[0] ?? 0);
         const z = min[1] + j * (step[1] ?? 0);
         const n = normalize([height(x - e, z) - height(x + e, z), 2 * e, height(x, z - e) - height(x, z + e)]);
-        vertex([x, height(x, z), z], n, color, material);
+        vertex([x, height(x, z), z], n, color, material, pattern, 0);
       }
     }
     for (let j = 0; j < segments; j += 1) {
@@ -94,12 +107,12 @@ export const createMeshBuilder = () => {
     }
   };
 
-  const disc = ({ center, radius, segments, color, material }: DiscOptions): void => {
+  const disc = ({ center, radius, segments, color, material, pattern = 0 }: DiscOptions): void => {
     const base = count();
-    vertex(center, [0, 1, 0], color, material);
+    vertex(center, [0, 1, 0], color, material, pattern, 0);
     for (let i = 0; i <= segments; i += 1) {
       const a = (i / segments) * Math.PI * 2;
-      vertex([center[0] + Math.cos(a) * radius[0], center[1], center[2] + Math.sin(a) * radius[1]], [0, 1, 0], color, material);
+      vertex([center[0] + Math.cos(a) * radius[0], center[1], center[2] + Math.sin(a) * radius[1]], [0, 1, 0], color, material, pattern, 0);
     }
     for (let i = 1; i <= segments; i += 1) indices.push(base, base + i, base + i + 1);
   };

@@ -20,6 +20,8 @@ layout(std140) uniform Frame {
   vec4 uLightPos[4];
   vec4 uLightCol[4];
   vec4 uWater[2];   // 中心の xz, 半径の xz
+  vec4 uWind;       // 向きの xz, 強さ, 突風
+  vec4 uTerrainPatterns; // 草, 道, 砂の模様の番号
 };`;
 
 const COMMON = `
@@ -38,24 +40,66 @@ vec3 curved(vec3 p){
   return p;
 }`;
 
+/** 風で揺らす。場所ごとに少しずつずれた波と、ゆっくり通り過ぎる突風を重ねる */
+const WIND = `
+vec3 windy(vec3 w, float sway){
+  if (sway <= 0.0) return w;
+  float t = uEye.w, phase = dot(w.xz, vec2(0.37, 0.21));
+  float gust = sin(t * 0.6 - dot(w.xz, uWind.xy) * 0.35) * 0.5 + 0.5;
+  vec2 push = uWind.xy * uWind.z * (0.35 + gust * uWind.w);
+  vec2 flutter = vec2(sin(t * 2.3 + phase), cos(t * 1.9 + phase * 1.3)) * 0.12 * uWind.z;
+  vec2 bend = (push + flutter) * sway;
+  return vec3(w.x + bend.x, w.y - dot(bend, bend) * 0.4, w.z + bend.y);
+}`;
+
 export const MAIN_VS = `#version 300 es
 layout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in vec3 aC; layout(location=3) in float aM;
+layout(location=6) in float aPattern; layout(location=7) in float aSway;
 ${FRAME_BLOCK}
-uniform mat4 uModel; uniform mat3 uNormal;
-out vec3 vW, vN, vC; out float vM;
+uniform mat4 uModel;
+out vec3 vW, vC, vLocal, vLocalN; out float vM, vPattern;
 ${CURVE}
+${WIND}
 void main(){
-  vec4 w = uModel * vec4(aP, 1.0); vW = w.xyz; vN = uNormal * aN; vC = aC; vM = aM;
-  gl_Position = uViewProj * vec4(curved(w.xyz), 1.0);
+  vec3 w = windy((uModel * vec4(aP, 1.0)).xyz, aSway);
+  vW = w; vC = aC; vM = aM; vPattern = aPattern; vLocal = aP; vLocalN = aN;
+  gl_Position = uViewProj * vec4(curved(w), 1.0);
+}`;
+
+/** 模様を三方向から貼り、凹凸（ノーマルマップ）を法線に混ぜる。low では一番向いている 1 方向だけ読む */
+const DETAIL = `
+struct Detail { vec3 n; float shade; float cavity; float rough; };
+vec3 unpackN(vec2 v){ vec2 xy = v * 2.0 - 1.0; return vec3(xy, sqrt(max(0.0, 1.0 - dot(xy, xy)))); }
+Detail detailAt(vec3 p, vec3 n, float layer){
+  if (layer < 0.5) return Detail(n, 1.0, 1.0, 0.8);
+  vec3 q = p * uScales[int(layer + 0.5)];
+  vec3 w = pow(abs(n), vec3(4.0)); w /= (w.x + w.y + w.z);
+#if TRIPLANAR
+  vec4 d = texture(uDetail, vec3(q.zy, layer)) * w.x + texture(uDetail, vec3(q.xz, layer)) * w.y + texture(uDetail, vec3(q.xy, layer)) * w.z;
+  vec3 tx = unpackN(texture(uNormals, vec3(q.zy, layer)).xy);
+  vec3 ty = unpackN(texture(uNormals, vec3(q.xz, layer)).xy);
+  vec3 tz = unpackN(texture(uNormals, vec3(q.xy, layer)).xy);
+#else
+  vec2 uv = w.x > w.y && w.x > w.z ? q.zy : (w.y > w.z ? q.xz : q.xy);
+  vec4 d = texture(uDetail, vec3(uv, layer));
+  vec3 tx = unpackN(texture(uNormals, vec3(uv, layer)).xy), ty = tx, tz = tx;
+#endif
+  tx = vec3(tx.xy + n.zy, abs(tx.z) * n.x);
+  ty = vec3(ty.xy + n.xz, abs(ty.z) * n.y);
+  tz = vec3(tz.xy + n.xy, abs(tz.z) * n.z);
+  return Detail(normalize(tx.zyx * w.x + ty.xzy * w.y + tz.xyz * w.z), d.r * 2.0, d.g, d.b);
 }`;
 
 export const MAIN_FS = `#version 300 es
-precision highp float; precision highp sampler2DShadow;
+precision highp float; precision highp sampler2DShadow; precision highp sampler2DArray;
 ${FRAME_BLOCK}
-in vec3 vW, vN, vC; in float vM;
+in vec3 vW, vC, vLocal, vLocalN; in float vM, vPattern;
+uniform mat3 uNormal;
 uniform sampler2DShadow uShadow; uniform sampler2D uPaths;
+uniform sampler2DArray uDetail, uNormals; uniform float uScales[32];
 out vec4 o;
 ${COMMON}
+${DETAIL}
 float shadowAt(vec3 w, vec3 n){
   vec4 s = uLightVP * vec4(w + n * 0.03, 1.0); vec3 c = s.xyz / s.w * 0.5 + 0.5;
   if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0 || c.z > 1.0) return 1.0;
@@ -63,19 +107,20 @@ float shadowAt(vec3 w, vec3 n){
   for (int x = -1; x <= 1; x++) for (int y = -1; y <= 1; y++) t += texture(uShadow, vec3(c.xy + vec2(x, y) * px, c.z - 0.0012));
   return t / 9.0;
 }
-vec3 terrain(vec3 w){
+/** 地面。草の模様と道の模様を、マスの道の地図で混ぜ、池の縁は砂にする */
+Detail terrain(vec3 w, vec3 geo, out vec3 color){
   float patchy = noise(w.xz * 0.45) * 0.6 + noise(w.xz * 1.6) * 0.4;
-  vec3 g = mix(lin(vC) * 0.82, lin(vC) * 1.08, smoothstep(0.35, 0.72, patchy));
-  vec2 cell = floor(w.xz * 2.0 + 0.5); vec2 f = fract(w.xz * 2.0 + 0.5) - 0.5;
-  vec2 q = f - (vec2(hash(cell + 3.1), hash(cell + 7.7)) - 0.5) * 0.4;
-  float tri = max(abs(q.x) * 1.8 - q.y, q.y * 1.6);
-  g = mix(g, g * 1.45, (1.0 - smoothstep(0.07, 0.085, tri)) * step(0.55, hash(cell)));
+  vec3 grass = mix(lin(vC) * 0.82, lin(vC) * 1.08, smoothstep(0.35, 0.72, patchy));
   vec2 uv = (w.xz - uTerrain.xy + 0.5) / uTerrain.zw;
-  float path = texture(uPaths, uv).r + (noise(w.xz * 4.0) - 0.5) * 0.28;
-  vec3 dirt = mix(lin(vec3(0.62, 0.5, 0.36)), lin(vec3(0.54, 0.42, 0.3)), noise(w.xz * 7.0));
-  dirt = mix(dirt, lin(vec3(0.5, 0.48, 0.5)), step(0.72, hash(floor(w.xz * 3.0))) * 0.5);
-  g = mix(g, dirt, smoothstep(0.42, 0.5, path));
-  return mix(g, lin(vec3(0.7, 0.62, 0.46)), 1.0 - smoothstep(-0.08, -0.02, w.y));
+  float path = smoothstep(0.42, 0.52, texture(uPaths, uv).r + (noise(w.xz * 4.0) - 0.5) * 0.28);
+  float sand = 1.0 - smoothstep(-0.08, -0.02, w.y);
+  Detail g = detailAt(w, geo, uTerrainPatterns.x);
+  Detail p = detailAt(w, geo, uTerrainPatterns.y);
+  Detail s = detailAt(w, geo, uTerrainPatterns.z);
+  vec3 dirt = mix(lin(vec3(0.62, 0.5, 0.36)), lin(vec3(0.54, 0.42, 0.3)), noise(w.xz * 3.0));
+  color = mix(mix(grass * g.shade, dirt * p.shade, path), lin(vec3(0.7, 0.62, 0.46)) * s.shade, sand);
+  vec3 n = normalize(mix(mix(g.n, p.n, path), s.n, sand));
+  return Detail(n, 1.0, mix(mix(g.cavity, p.cavity, path), s.cavity, sand), mix(g.rough, p.rough, path));
 }
 vec3 water(vec3 w, vec3 V, float sh){
   int index = 0; float e = 10.0;
@@ -90,25 +135,35 @@ vec3 water(vec3 w, vec3 V, float sh){
   c = mix(c, uSun.rgb * 0.6 + uFill.rgb, foam * 0.85);
   return mix(c, lin(uHorizon.rgb), pow(1.0 - max(V.y, 0.0), 3.0) * 0.3);
 }
+vec3 shadeSurface(vec3 base, Detail d, vec3 V, float sh, int m){
+  vec3 n = d.n;
+  bool leaf = m == 5;
+  if (leaf) base *= mix(0.78, 1.18, n.y * 0.5 + 0.5);
+  float lit = smoothstep(leaf ? -0.3 : -0.05, 0.2, dot(n, uSunDir.xyz)) * sh;
+  vec3 col = base * mix(uShade.rgb * d.cavity, uSun.rgb, lit) + base * uFill.rgb * (0.55 + 0.45 * n.y) * d.cavity;
+  float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
+  col += lin(uHorizon.rgb) * rim * 0.14 * (0.3 + 0.7 * lit);
+  vec3 h = normalize(uSunDir.xyz + V);
+  float gloss = m == 6 ? 0.7 : (1.0 - d.rough) * 0.35;
+  col += uSun.rgb * pow(max(dot(n, h), 0.0), mix(90.0, 10.0, d.rough)) * gloss * lit;
+  return col;
+}
 void main(){
   int m = int(vM + 0.5);
-  vec3 n = normalize(vN), V = normalize(uEye.xyz - vW), base = lin(vC), col;
-  float sh = shadowAt(vW, n);
+  vec3 V = normalize(uEye.xyz - vW), base = lin(vC), col;
+  vec3 geo = normalize(uNormal * vLocalN);
+  float sh = shadowAt(vW, geo);
   if (m == 4) col = water(vW, V, sh);
+  else if (m == 3) { Detail d = terrain(vW, geo, base); col = shadeSurface(base, d, V, sh, m); }
   else {
-    if (m == 3) base = terrain(vW);
-    bool leaf = m == 5;
-    if (leaf) base *= mix(0.78, 1.18, n.y * 0.5 + 0.5);
-    float lit = smoothstep(leaf ? -0.3 : -0.05, 0.2, dot(n, uSunDir.xyz)) * sh;
-    col = base * mix(uShade.rgb, uSun.rgb, lit) + base * uFill.rgb * (0.55 + 0.45 * n.y);
-    float rim = pow(1.0 - max(dot(n, V), 0.0), 3.0);
-    col += lin(uHorizon.rgb) * rim * 0.14 * (0.3 + 0.7 * lit);
-    if (m == 6) col += vec3(pow(max(dot(n, normalize(uSunDir.xyz + V)), 0.0), 60.0)) * 0.7 * (0.3 + 0.7 * sh);
+    Detail d = detailAt(vLocal, normalize(vLocalN), vPattern);
+    d.n = normalize(uNormal * d.n);
+    col = shadeSurface(base * d.shade, d, V, sh, m);
   }
   for (int i = 0; i < 4; i++) {
     if (float(i) >= uViewport.z) break;
-    vec3 d = uLightPos[i].xyz - vW; float dist = length(d), a = max(0.0, 1.0 - dist / uLightPos[i].w);
-    col += base * uLightCol[i].rgb * a * a * (0.3 + 0.7 * max(dot(n, d / dist), 0.0));
+    vec3 dl = uLightPos[i].xyz - vW; float dist = length(dl), a = max(0.0, 1.0 - dist / uLightPos[i].w);
+    col += base * uLightCol[i].rgb * a * a * (0.3 + 0.7 * max(dot(geo, dl / dist), 0.0));
   }
   if (m == 1) col = base * (0.25 + uGlow.x * 2.4);
   if (m == 8) col = base * (0.25 + uGlow.w * 2.4);
@@ -119,9 +174,11 @@ void main(){
 }`;
 
 export const SHADOW_VS = `#version 300 es
-layout(location=0) in vec3 aP;
+layout(location=0) in vec3 aP; layout(location=7) in float aSway;
+${FRAME_BLOCK}
 uniform mat4 uLightVPs; uniform mat4 uModel;
-void main(){ gl_Position = uLightVPs * uModel * vec4(aP, 1.0); }`;
+${WIND}
+void main(){ gl_Position = uLightVPs * vec4(windy((uModel * vec4(aP, 1.0)).xyz, aSway), 1.0); }`;
 
 export const SHADOW_FS = `#version 300 es
 precision highp float; void main(){}`;
@@ -159,8 +216,103 @@ ${FRAME_BLOCK}
 in vec3 vN; in vec4 vTint; in vec3 vW; uniform float uAdditive; out vec4 o;
 ${COMMON}
 void main(){
-  vec3 n = normalize(vN), base = lin(vTint.rgb);
+  vec3 n = normalize(vN), base = lin(vTint.rgb), V = normalize(uEye.xyz - vW);
   vec3 lit = base * (uFill.rgb * 1.2 + uSun.rgb * (0.4 + 0.6 * max(dot(n, uSunDir.xyz), 0.0)));
-  vec3 col = mix(lit, base * 1.6, uAdditive);
-  o = vec4(tone(col), vTint.a);
+  vec3 col = mix(lit, base * 1.8, uAdditive);
+  // 縁ほど透かして、輪郭のない柔らかい玉にする（光る粒はより強く絞って、芯だけ明るく）
+  float facing = max(dot(n, V), 0.0);
+  float soft = mix(pow(facing, 0.9), pow(facing, 2.2), uAdditive);
+  o = vec4(tone(col), vTint.a * soft);
 }`;
+
+/** 草の葉。1 枚の細い葉を、草ごとの位置・高さ・向き・幅で置き、先ほど強く風に揺らす */
+export const FOLIAGE_VS = `#version 300 es
+layout(location=0) in vec3 aBlade; layout(location=4) in vec4 aPlace; layout(location=5) in vec4 aShape;
+${FRAME_BLOCK}
+out vec3 vW, vN; out float vT, vShade;
+${CURVE}
+${WIND}
+void main(){
+  float c = cos(aShape.x), s = sin(aShape.x);
+  vec3 local = vec3(aBlade.x * aShape.y, aBlade.y * aPlace.w, aBlade.z * aPlace.w);
+  vec3 w = aPlace.xyz + vec3(local.x * c + local.z * s, local.y, -local.x * s + local.z * c);
+  w = windy(w, aBlade.y * aBlade.y * 1.1);
+  vW = w; vT = aBlade.y; vShade = aShape.z;
+  vN = normalize(mix(vec3(s, 0.0, c), vec3(0.0, 1.0, 0.0), 0.65));
+  gl_Position = uViewProj * vec4(curved(w), 1.0);
+}`;
+
+export const FOLIAGE_FS = `#version 300 es
+precision highp float; precision highp sampler2DShadow;
+${FRAME_BLOCK}
+in vec3 vW, vN; in float vT, vShade;
+uniform sampler2DShadow uShadow; uniform vec3 uGrass;
+out vec4 o;
+${COMMON}
+float shadowAt(vec3 w){
+  vec4 s = uLightVP * vec4(w, 1.0); vec3 c = s.xyz / s.w * 0.5 + 0.5;
+  if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0 || c.z > 1.0) return 1.0;
+  return texture(uShadow, vec3(c.xy, c.z - 0.002));
+}
+void main(){
+  vec3 base = lin(uGrass) * mix(0.45, 1.2, vT) * vShade;
+  float sh = shadowAt(vW);
+  float lit = (0.45 + 0.55 * max(dot(vN, uSunDir.xyz), 0.0)) * sh;
+  vec3 col = base * mix(uShade.rgb, uSun.rgb, lit) + base * uFill.rgb * mix(0.5, 1.0, vT);
+  col += uSun.rgb * base * pow(max(dot(normalize(uEye.xyz - vW), -uSunDir.xyz), 0.0), 4.0) * vT * 0.6 * sh;
+  for (int i = 0; i < 4; i++) {
+    if (float(i) >= uViewport.z) break;
+    float d = length(uLightPos[i].xyz - vW), a = max(0.0, 1.0 - d / uLightPos[i].w);
+    col += base * uLightCol[i].rgb * a * a * 0.8;
+  }
+  col = mix(col, lin(uHorizon.rgb), smoothstep(uSun.w, uShade.w, length(vW - uEye.xyz)));
+  o = vec4(tone(col) * vignette(), 1.0);
+}`;
+
+/** 布。uv で模様を貼り、表裏どちらからも見える。日に透けると裏から明るく光る */
+export const CLOTH_VS = `#version 300 es
+layout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in vec2 aUV;
+${FRAME_BLOCK}
+out vec3 vW, vN; out vec2 vUV;
+${CURVE}
+void main(){ vW = aP; vN = aN; vUV = aUV; gl_Position = uViewProj * vec4(curved(aP), 1.0); }`;
+
+export const CLOTH_FS = `#version 300 es
+precision highp float; precision highp sampler2DShadow; precision highp sampler2DArray;
+${FRAME_BLOCK}
+in vec3 vW, vN; in vec2 vUV;
+uniform sampler2DShadow uShadow; uniform sampler2DArray uDetail;
+uniform vec3 uCloth; uniform float uClothPattern;
+out vec4 o;
+${COMMON}
+float shadowAt(vec3 w){
+  vec4 s = uLightVP * vec4(w, 1.0); vec3 c = s.xyz / s.w * 0.5 + 0.5;
+  if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0 || c.z > 1.0) return 1.0;
+  return texture(uShadow, vec3(c.xy, c.z - 0.002));
+}
+void main(){
+  vec3 V = normalize(uEye.xyz - vW), n = normalize(vN);
+  if (dot(n, V) < 0.0) n = -n;
+  vec4 d = uClothPattern > 0.5 ? texture(uDetail, vec3(vUV, uClothPattern)) : vec4(0.5, 1.0, 0.9, 0.5);
+  vec3 base = lin(uCloth) * d.r * 2.0;
+  float sh = shadowAt(vW);
+  float lit = smoothstep(-0.1, 0.3, dot(n, uSunDir.xyz)) * sh;
+  vec3 col = base * mix(uShade.rgb * d.g, uSun.rgb, lit) + base * uFill.rgb * d.g * 0.8;
+  col += base * uSun.rgb * max(dot(-n, uSunDir.xyz), 0.0) * 0.45 * sh;
+  for (int i = 0; i < 4; i++) {
+    if (float(i) >= uViewport.z) break;
+    vec3 l = uLightPos[i].xyz - vW; float dist = length(l), a = max(0.0, 1.0 - dist / uLightPos[i].w);
+    col += base * uLightCol[i].rgb * a * a * (0.4 + 0.6 * abs(dot(n, l / dist)));
+  }
+  col = mix(col, lin(uHorizon.rgb), smoothstep(uSun.w, uShade.w, length(vW - uEye.xyz)));
+  o = vec4(tone(col) * vignette(), 1.0);
+}`;
+
+/** 模様を描くための、画面いっぱいの三角形 */
+export const QUAD_VS = `#version 300 es
+const vec2 P[3] = vec2[3](vec2(-1, -1), vec2(3, -1), vec2(-1, 3));
+out vec2 vUv;
+void main(){ vUv = P[gl_VertexID] * 0.5 + 0.5; gl_Position = vec4(P[gl_VertexID], 0.0, 1.0); }`;
+
+/** 三方向の投影を使うかどうかを、シェーダーの先頭で決める */
+export const withTriplanar = (source: string, on: boolean): string => source.replace("#version 300 es", `#version 300 es\n#define TRIPLANAR ${on ? 1 : 0}`);

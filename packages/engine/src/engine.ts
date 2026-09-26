@@ -1,6 +1,8 @@
 import type { Viewport } from "./camera/camera";
 import { browserScheduler, createLoop, createResolutionGovernor, type FrameInfo } from "./loop/loop";
 import { createRenderer, type Renderer } from "./render/gl/renderer";
+import type { Quality } from "./quality";
+import type { PatternDef } from "./render/patterns";
 import type { FrameInput } from "./render/types";
 
 export type EngineFrame = FrameInfo & { readonly viewport: Viewport };
@@ -14,8 +16,10 @@ export type EngineStats = {
 
 export type EngineOptions = {
   readonly canvas: HTMLCanvasElement;
-  /** low は影の地図を小さくし、画素の倍率の上限を下げる */
-  readonly quality?: "high" | "low";
+  /** 画質の段階。影、テクスチャ、画素の倍率の上限、三方向の投影を決める。"auto" は端末の性能から選ぶ */
+  readonly quality: Quality | "auto";
+  /** 模様（手続き生成のテクスチャ）。層の番号は並びの順に 1 から */
+  readonly patterns: readonly PatternDef[];
   /** 毎フレーム呼ぶ。描くものと、動く物があるか（なければ描く回数を減らす）を返す */
   readonly frame: (info: EngineFrame) => { readonly input: FrameInput; readonly animating: boolean };
   readonly onStats?: (stats: EngineStats) => void;
@@ -23,9 +27,10 @@ export type EngineOptions = {
 
 export type Result<T, E> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E };
 
-const build = ({ canvas, quality = "high", frame, onStats }: EngineOptions, renderer: Renderer) => {
+const build = ({ canvas, frame, onStats }: EngineOptions, renderer: Renderer) => {
+  const { quality } = renderer;
   const governor = createResolutionGovernor({ min: 0.55, max: 1, budgetMs: 1000 / 50 });
-  const maxRatio = quality === "low" ? 1.25 : 2;
+  const maxRatio = quality.maxPixelRatio;
   let viewport: Viewport = { width: canvas.clientWidth || 1, height: canvas.clientHeight || 1 };
   let wasAnimating = false;
   let frames = 0;
@@ -64,6 +69,9 @@ const build = ({ canvas, quality = "high", frame, onStats }: EngineOptions, rend
     setStatic: renderer.setStatic,
     addModel: renderer.addModel,
     setTerrain: renderer.setTerrain,
+    setFoliage: renderer.setFoliage,
+    /** 実際に選ばれた画質の段階 */
+    quality,
     start: loop.start,
     stop: loop.stop,
     invalidate: loop.invalidate,
@@ -79,7 +87,7 @@ export type Engine = ReturnType<typeof build>;
  */
 export const createEngine = (options: EngineOptions): Result<Engine, string> => {
   try {
-    const renderer = createRenderer(options.canvas, { shadowSize: options.quality === "low" ? 1024 : 2048 });
+    const renderer = createRenderer(options.canvas, { quality: options.quality, patterns: options.patterns });
     return { ok: true, value: build(options, renderer) };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "描画を始められませんでした" };

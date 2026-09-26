@@ -20,9 +20,11 @@ export const FRAME_OFFSET = {
   lightPosition: 72,
   lightColor: 72 + MAX_LIGHTS * 4,
   water: 72 + MAX_LIGHTS * 8,
+  wind: 72 + MAX_LIGHTS * 8 + MAX_WATERS * 4,
+  terrainPatterns: 72 + MAX_LIGHTS * 8 + MAX_WATERS * 4 + 4,
 } as const;
 
-export const FRAME_FLOATS = FRAME_OFFSET.water + MAX_WATERS * 4;
+export const FRAME_FLOATS = FRAME_OFFSET.terrainPatterns + 4;
 
 export const toLinear = (c: Color): Color => [c[0] ** 2.2, c[1] ** 2.2, c[2] ** 2.2];
 
@@ -38,6 +40,8 @@ export type FrameValues = {
   readonly shadowSize: number;
   readonly terrain: { readonly min: readonly [number, number]; readonly size: readonly [number, number] };
   readonly waters: readonly Water[];
+  /** 地面の草、道、砂に使う模様の番号 */
+  readonly terrainPatterns: readonly [number, number, number];
 };
 
 /** フレームに共通の値を、Frame ブロックの並びで 1 本の配列に詰める（GPU には 1 回で送る） */
@@ -64,6 +68,8 @@ export const packFrame = (v: FrameValues): Float32Array => {
     put(FRAME_OFFSET.lightColor + i * 4, [...l.color, 0]);
   });
   waters.forEach((w, i) => put(FRAME_OFFSET.water + i * 4, [...w.center, ...w.radius]));
+  put(FRAME_OFFSET.wind, [...env.wind.direction, env.wind.strength, env.wind.gust]);
+  put(FRAME_OFFSET.terrainPatterns, [...v.terrainPatterns, 0]);
   return out;
 };
 

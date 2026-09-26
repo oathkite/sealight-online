@@ -2,6 +2,7 @@ import type { CameraRig, Rect } from "../camera/camera";
 import type { Color } from "../geometry/meshBuilder";
 import type { Mat4 } from "../math/mat4";
 import type { Vec3 } from "../math/vec3";
+import type { ClothMeshData } from "../physics/cloth";
 import type { Pose } from "../scene/scene";
 
 /**
@@ -55,7 +56,11 @@ export type Environment = {
   readonly vignette: number;
   /** 最大 4 つ */
   readonly lights: readonly PointLight[];
+  readonly wind: Wind;
 };
+
+/** 風。草木と布を揺らす。direction は地面の上の向き（x, z） */
+export type Wind = { readonly direction: readonly [number, number]; readonly strength: number; readonly gust: number };
 
 export type ModelInstance = {
   readonly model: string;
@@ -71,6 +76,9 @@ export type ParticleSet = {
   readonly count: number;
 };
 
+/** 布 1 枚を描くための形と色。形は毎フレーム変わる */
+export type ClothDraw = { readonly mesh: ClothMeshData; readonly color: Color; readonly pattern: number };
+
 export type FrameInput = {
   readonly camera: CameraRig;
   /** パネルに隠れない、見える場所 */
@@ -78,9 +86,15 @@ export type FrameInput = {
   readonly environment: Environment;
   readonly models: readonly ModelInstance[];
   readonly particles: readonly ParticleSet[];
+  readonly cloths: readonly ClothDraw[];
   readonly time: number;
 };
 
 export const PARTICLE_FLOATS = 8;
+/** 草 1 本あたりの数：位置 x, y, z、高さ、向き、幅、明るさ、予備 */
+export const FOLIAGE_FLOATS = 8;
+
+/** 一面の草。インスタンス描画で、1 回の描画で全部描く */
+export type Foliage = { readonly data: Float32Array; readonly color: Color };
 export const MAX_LIGHTS = 4;
 export const MAX_WATERS = 2;

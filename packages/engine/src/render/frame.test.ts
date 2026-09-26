@@ -17,6 +17,7 @@ const environment: Environment = {
   curve: 0.04,
   vignette: 0.3,
   lights: [{ position: [1, 2, 3], color: [1, 0.5, 0], radius: 2.5 }],
+  wind: { direction: [1, 0], strength: 0.6, gust: 0.4 },
 };
 
 const base = {
@@ -30,6 +31,7 @@ const base = {
   shadowSize: 2048,
   terrain: { min: [-8, -6] as const, size: [17, 13] as const },
   waters: [{ center: [-5, 3] as const, radius: [1.5, 1] as const }],
+  terrainPatterns: [3, 4, 5] as const,
 };
 
 describe("packFrame", () => {
@@ -60,6 +62,14 @@ describe("packFrame", () => {
   it("空の地平の色は sRGB のまま渡す（シェーダーでリニアに直す）", () => {
     const data = packFrame({ ...base, environment });
     expect(Array.from(data.slice(FRAME_OFFSET.horizon, FRAME_OFFSET.horizon + 3))).toEqual([0.8, 0.9, 1].map((v) => Math.fround(v)));
+  });
+});
+
+describe("packFrame 風と地面の模様", () => {
+  it("風の向き、強さ、突風と、地面に使う模様の番号を入れる", () => {
+    const data = packFrame({ ...base, environment });
+    expect(Array.from(data.slice(FRAME_OFFSET.wind, FRAME_OFFSET.wind + 4)).map((v) => Math.round(v * 10) / 10)).toEqual([1, 0, 0.6, 0.4]);
+    expect(Array.from(data.slice(FRAME_OFFSET.terrainPatterns, FRAME_OFFSET.terrainPatterns + 3))).toEqual([3, 4, 5]);
   });
 });
 
