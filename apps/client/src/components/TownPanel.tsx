@@ -12,6 +12,7 @@ export type TownActions = {
   readonly sell: (itemId: string) => void;
   readonly buy: (sku: ShopSku, quantity: number) => void;
   readonly setTactics: (tactics: Tactics) => void;
+  readonly forge: (targetId: string, materialId: string) => void;
   readonly depart: (target: number, rations: number) => void;
 };
 
@@ -34,6 +35,7 @@ export const TownPanel = ({ character, busy, actions }: TownPanelProps) => (
         onEquip={actions.equip}
         onUnequip={actions.unequip}
         onSell={actions.sell}
+        onForge={actions.forge}
       />
       <div>
         <TacticsForm tactics={character.tactics} busy={busy} onChange={actions.setTactics} />

@@ -8,7 +8,10 @@ export { bandOf, floorConfig, foeAt, spawnFoe, type FloorConfig, type Foe, type 
 export {
   AFFIX_COUNTERS,
   AFFIXES,
+  forgeCost,
+  forgeGain,
   isShopSku,
+  MAX_FORGE,
   SHOP,
   shopOffer,
   type Affix,
@@ -54,6 +57,7 @@ export {
   buy,
   departExpedition,
   equip,
+  forge,
   MAX_BUY,
   returnFromExpedition,
   sell,

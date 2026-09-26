@@ -12,13 +12,14 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
     sell: vi.fn(),
     buy: vi.fn(),
     setTactics: vi.fn(),
+    forge: vi.fn(),
     depart: vi.fn(),
   };
   const character: CharacterState = {
     ...createCharacter(),
     stash: [
-      { id: "st1", slot: "armor", name: "革の胸当て", rarity: "common", power: 2, value: 10, affix: null },
-      { id: "st2", slot: "armor", name: "木の盾", rarity: "common", power: 1, value: 8, affix: "guard" },
+      { id: "st1", slot: "armor", name: "革の胸当て", rarity: "common", power: 2, value: 10, affix: null, forged: 0 },
+      { id: "st2", slot: "armor", name: "木の盾", rarity: "common", power: 1, value: 8, affix: "guard", forged: 0 },
     ],
     ...overrides,
   };
@@ -80,6 +81,26 @@ describe("TownPanel", () => {
     expect(shield).toHaveTextContent(/防\+8/);
     await user.click(shield);
     expect(actions.buy).toHaveBeenCalledWith("guard-shield", 1);
+  });
+
+  it("装備を鍛えるときは、同じ部位の倉庫の装備を溶かす。上がる強さと手間賃が分かる", async () => {
+    const { actions, user } = setup();
+    const row = screen.getByText(/木の盾/).closest("li");
+    if (!row) throw new Error("倉庫の行が見つかりません");
+    await user.click(within(row).getByRole("button", { name: "鍛える" }));
+    const panel = screen.getByRole("region", { name: "木の盾を鍛える" });
+    const melt = within(panel).getByRole("button", { name: /革の胸当てを溶かす/ });
+    expect(melt).toHaveTextContent("防 +1");
+    expect(melt).toHaveTextContent("10 G");
+    expect(within(panel).queryByRole("button", { name: /木の盾を溶かす/ })).not.toBeInTheDocument();
+    await user.click(melt);
+    expect(actions.forge).toHaveBeenCalledWith("st2", "st1");
+  });
+
+  it("鍛えた回数が上限の装備は、鍛えるボタンが出ない", () => {
+    setup({ equipment: { weapon: null, armor: null }, stash: [{ id: "m", slot: "armor", name: "木の盾", rarity: "common", power: 5, value: 40, affix: "guard", forged: 3 }] });
+    expect(screen.getByText("+3")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "鍛える" })).not.toBeInTheDocument();
   });
 
   it("ポーションを飲む HP を変えられる", async () => {

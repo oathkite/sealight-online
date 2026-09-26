@@ -5,6 +5,7 @@ import {
   createCharacter,
   departExpedition,
   equip,
+  forge,
   returnFromExpedition,
   sell,
   setTactics,
@@ -25,7 +26,8 @@ export type Action =
   | { readonly type: "unequip"; readonly slot: Slot }
   | { readonly type: "sell"; readonly itemId: string }
   | { readonly type: "buy"; readonly sku: ShopSku; readonly quantity: number }
-  | { readonly type: "tactics"; readonly tactics: Tactics };
+  | { readonly type: "tactics"; readonly tactics: Tactics }
+  | { readonly type: "forge"; readonly targetId: string; readonly materialId: string };
 
 /** 帰る時刻と結果。帰る時刻まで、画面には渡さない */
 type Pending = { readonly endsAt: number; readonly result: ExpeditionResult };
@@ -47,6 +49,8 @@ const applyAction = (state: CharacterState, action: Action): RuleResult => {
       return buy(state, action.sku, crypto.randomUUID(), action.quantity);
     case "tactics":
       return setTactics(state, action.tactics);
+    case "forge":
+      return forge(state, action.targetId, action.materialId);
   }
 };
 

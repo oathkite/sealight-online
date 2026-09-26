@@ -32,6 +32,8 @@ export type Equipment = {
   /** 売値 */
   readonly value: number;
   readonly affix: Affix | null;
+  /** 鍛えた回数 */
+  readonly forged: number;
 };
 
 export type Loot =
@@ -52,6 +54,24 @@ export const AFFIX_POWER = 0.75;
 /** 売値。珍しい物と特性付きは高い */
 export const equipmentValue = (power: number, rarity: Rarity, affix: Affix | null): number =>
   Math.round(power * 5 * (rarity === "rare" ? 3 : 1) * (affix ? 1.6 : 1));
+
+/** 鍛えられる回数の上限 */
+export const MAX_FORGE = 3;
+/** 溶かした装備の強さのうち、鍛えた装備に乗る割合 */
+const FORGE_RATIO = 0.25;
+/** 鍛える手間賃の、1 回目の値段。回を重ねるごとに増える */
+const FORGE_FEE = 10;
+
+/** 素材を溶かしたときに上がる強さ。最低 1 */
+export const forgeGain = (material: Pick<Equipment, "power">): number => Math.max(1, Math.round(material.power * FORGE_RATIO));
+
+export const forgeCost = (target: Pick<Equipment, "forged">): number => FORGE_FEE * (target.forged + 1);
+
+/** 素材を溶かして鍛えた後の装備。特性はそのまま */
+export const forgedWith = (target: Equipment, material: Equipment): Equipment => {
+  const power = target.power + forgeGain(material);
+  return { ...target, power, value: equipmentValue(power, target.rarity, target.affix), forged: target.forged + 1 };
+};
 
 type ShopEquipment = { readonly type: "equipment"; readonly slot: Slot; readonly name: string; readonly affix: Affix };
 
@@ -89,6 +109,6 @@ export const shopOffer = (sku: ShopSku, clearedDepth: number): ShopOffer => {
   if (product.type !== "equipment") return { price: product.price, item: null };
   const power = Math.max(1, Math.round((basePower(Math.max(1, clearedDepth)) + 1) * AFFIX_POWER));
   const value = equipmentValue(power, "common", product.affix);
-  const item = { slot: product.slot, name: product.name, rarity: "common", power, value, affix: product.affix } as const;
+  const item = { slot: product.slot, name: product.name, rarity: "common", power, value, affix: product.affix, forged: 0 } as const;
   return { price: value * MARKUP, item };
 };

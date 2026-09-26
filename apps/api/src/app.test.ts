@@ -167,6 +167,20 @@ describe("街での行動", () => {
     expect(equipped.equipment.weapon?.id).toBe(item?.id);
   });
 
+  it("倉庫の装備を溶かして、同じ部位の装備を鍛えられる。本文が不正なら 400、素材が合わなければ 409", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    const shield = { id: "g", slot: "armor", name: "樫の大盾", rarity: "common", power: 4, value: 32, affix: "guard", forged: 0 } as const;
+    const plate = { id: "p", slot: "armor", name: "深海の鎧", rarity: "rare", power: 12, value: 180, affix: null, forged: 0 } as const;
+    await patchState(c, { gold: 100, stash: [shield, plate] });
+    const forged = await c.call("POST", "/me/forge", { targetId: "g", materialId: "p" });
+    expect(forged.json.stash).toEqual([expect.objectContaining({ id: "g", forged: 1, affix: "guard" })]);
+    expect((await c.call("POST", "/me/forge", { targetId: "g" })).status).toBe(400);
+    const self = await c.call("POST", "/me/forge", { targetId: "g", materialId: "g" });
+    expect(self.status).toBe(409);
+    expect(self.json.error).toBe("invalid_material");
+  });
+
   it("作戦を変えられる。範囲外の値は 400", async () => {
     const c = client();
     expect((await c.call("PUT", "/me/tactics", { potionThreshold: 50 })).json.tactics).toEqual({ potionThreshold: 50 });

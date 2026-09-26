@@ -10,6 +10,7 @@ const actions: TownActions = {
   unequip: vi.fn(),
   sell: vi.fn(),
   buy: vi.fn(),
+  forge: vi.fn(),
   setTactics: vi.fn(),
   depart: vi.fn(),
 };

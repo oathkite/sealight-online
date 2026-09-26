@@ -39,7 +39,7 @@ const rollEquipment = (rng: Rng, context: LootContext, forceRare = false): Equip
   const raw = rarity === "rare" ? Math.round(base * 1.6) + 1 : base;
   const power = affix ? Math.max(1, Math.round(raw * AFFIX_POWER)) : raw;
   const value = equipmentValue(power, rarity, affix);
-  return { id, slot, name: pick(rng, ITEM_NAMES[slot][rarity]), rarity, power, value, affix };
+  return { id, slot, name: pick(rng, ITEM_NAMES[slot][rarity]), rarity, power, value, affix, forged: 0 };
 };
 
 /** 宝箱の中身を決める。運が高いほど装備が出やすく、お金も多い */

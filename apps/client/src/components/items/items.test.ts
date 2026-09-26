@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Equipment } from "@sealight/sim";
 import { gainOver, itemKind, statName } from "./items";
 
-const item = (name: string, slot: Equipment["slot"], power: number, rarity: Equipment["rarity"] = "common"): Equipment => ({ id: name, slot, name, rarity, power, value: 1, affix: null });
+const item = (name: string, slot: Equipment["slot"], power: number, rarity: Equipment["rarity"] = "common"): Equipment => ({ id: name, slot, name, rarity, power, value: 1, affix: null, forged: 0 });
 
 describe("itemKind", () => {
   it("名前から絵の種類を決める", () => {

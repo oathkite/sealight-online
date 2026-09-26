@@ -16,6 +16,7 @@ export type CharacterApi = {
   readonly sell: (itemId: string) => Promise<ApiResult>;
   readonly buy: (sku: ShopSku, quantity: number) => Promise<ApiResult>;
   readonly setTactics: (tactics: Tactics) => Promise<ApiResult>;
+  readonly forge: (targetId: string, materialId: string) => Promise<ApiResult>;
 };
 
 const parseResponse = async (res: Response): Promise<ApiResult> => {
@@ -52,5 +53,6 @@ export const createCharacterApi = (characterId: string, baseUrl: string = API_UR
     sell: (itemId) => call("POST", "/me/sell", { itemId }),
     buy: (sku, quantity) => call("POST", "/me/buy", { sku, quantity }),
     setTactics: (tactics) => call("PUT", "/me/tactics", tactics),
+    forge: (targetId, materialId) => call("POST", "/me/forge", { targetId, materialId }),
   };
 };

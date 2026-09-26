@@ -11,6 +11,7 @@ const equipment = z.object({
   power: z.number(),
   value: z.number(),
   affix: z.enum(["pierce", "sweep", "guard", "evade"]).nullable(),
+  forged: z.number(),
 });
 
 const stats = z.object({ str: z.number(), vit: z.number(), luk: z.number() });
@@ -91,7 +92,7 @@ const phase = z.discriminatedUnion("type", [
 ]);
 
 export const characterSchema: z.ZodType<CharacterState> = z.object({
-  version: z.literal(4),
+  version: z.literal(5),
   level: z.number(),
   xp: z.number(),
   unspentPoints: z.number(),

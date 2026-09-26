@@ -10,6 +10,7 @@ exports[`simulateExpedition > 特定のシードの結果が変わらない（�
     "items": [
       {
         "affix": null,
+        "forged": 0,
         "id": "42:1",
         "name": "棍棒",
         "power": 3,
@@ -19,6 +20,7 @@ exports[`simulateExpedition > 特定のシードの結果が変わらない（�
       },
       {
         "affix": null,
+        "forged": 0,
         "id": "42:25",
         "name": "革の胸当て",
         "power": 3,

@@ -36,6 +36,7 @@ export const ItemCard = ({ item, gain = null, order, children }: ItemCardProps) 
         <span className="item-name">
           {item.rarity === "rare" ? <span className="rarity">レア</span> : null}
           {item.name}
+          {item.forged > 0 ? <span className="forged">+{item.forged}</span> : null}
           {item.affix ? <span className={`affix ${item.affix}`}>{AFFIX_NAMES[item.affix]}</span> : null}
         </span>
         <span className="item-stat">

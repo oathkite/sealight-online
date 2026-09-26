@@ -13,6 +13,7 @@ export const usePanelActions = (api: CharacterApi, { run, depart }: Pick<Charact
       sell: (itemId) => void run(() => api.sell(itemId)),
       buy: (sku, quantity) => void run(() => api.buy(sku, quantity)),
       setTactics: (tactics) => void run(() => api.setTactics(tactics)),
+      forge: (targetId, materialId) => void run(() => api.forge(targetId, materialId)),
       depart: (target, rations) => void depart(target, rations),
     };
   }, [api, run, depart]);

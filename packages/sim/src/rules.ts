@@ -4,7 +4,7 @@ import { simulateExpedition } from "./expedition";
 import { PACE, type ExpeditionInput, type ExpeditionResult } from "./expedition-types";
 import type { StatKey } from "./fighter";
 import { MAX_DEPTH } from "./floor";
-import { SHOP, shopOffer, type ShopSku, type Slot } from "./items";
+import { forgeCost, forgedWith, MAX_FORGE, SHOP, shopOffer, type Equipment, type ShopSku, type Slot } from "./items";
 import { failure, success, type Result } from "./result";
 
 export type RuleError =
@@ -15,7 +15,9 @@ export type RuleError =
   | "no_points"
   | "item_not_found"
   | "not_enough_gold"
-  | "invalid_quantity";
+  | "invalid_quantity"
+  | "invalid_material"
+  | "max_forged";
 
 export type RuleResult = Result<CharacterState, RuleError>;
 
@@ -177,5 +179,32 @@ export const buy = (state: CharacterState, sku: ShopSku, newItemId: string, quan
   if (SHOP[sku].type === "potion") return success({ ...paid, potions: paid.potions + quantity });
   return success({ ...paid, rations: paid.rations + quantity });
 };
+
+/** 鍛える装備を、身につけている物と倉庫から探す */
+const findOwned = (state: CharacterState, itemId: string): Equipment | undefined =>
+  [state.equipment.weapon, state.equipment.armor, ...state.stash].filter((i): i is Equipment => i !== null).find((i) => i.id === itemId);
+
+/** 鍛えた装備を元の場所（身につけている所か倉庫）に戻し、素材を倉庫から除く */
+const replaceForged = (state: CharacterState, forged: Equipment, materialId: string): CharacterState => {
+  const worn = state.equipment[forged.slot]?.id === forged.id;
+  const stash = state.stash.filter((i) => i.id !== materialId).map((i) => (i.id === forged.id ? forged : i));
+  return { ...state, stash, equipment: worn ? { ...state.equipment, [forged.slot]: forged } : state.equipment };
+};
+
+/**
+ * 鍛冶（モンスターが家にいるときだけ）。倉庫の装備を 1 つ溶かして、同じ部位の装備を鍛える。
+ * 溶かした物の強さの一部が乗り、特性はそのまま残る。回を重ねるごとに手間賃が上がり、上限がある
+ */
+export const forge = (state: CharacterState, targetId: string, materialId: string): RuleResult =>
+  inTown(state, (s) => {
+    const target = findOwned(s, targetId);
+    const material = s.stash.find((i) => i.id === materialId);
+    if (!target || !material) return failure("item_not_found");
+    if (target.id === material.id || target.slot !== material.slot) return failure("invalid_material");
+    if (target.forged >= MAX_FORGE) return failure("max_forged");
+    const cost = forgeCost(target);
+    if (s.gold < cost) return failure("not_enough_gold");
+    return success(replaceForged({ ...s, gold: s.gold - cost }, forgedWith(target, material), material.id));
+  });
 
 export { maxHpOf };

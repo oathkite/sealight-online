@@ -6,7 +6,7 @@ import type { Equipment } from "./items";
 const ogre: FoeView = { kind: "ogre", name: "オーガ", hp: 40, traits: ["heavy"], rare: false };
 const skeleton: FoeView = { kind: "skeleton", name: "スケルトン", hp: 24, traits: [], rare: false };
 const rat: FoeView = { kind: "rat", name: "ネズミ", hp: 4, traits: ["swarm"], rare: false };
-const shield: Equipment = { id: "g", slot: "armor", name: "樫の大盾", rarity: "common", power: 3, value: 24, affix: "guard" };
+const shield: Equipment = { id: "g", slot: "armor", name: "樫の大盾", rarity: "common", power: 3, value: 24, affix: "guard", forged: 0 };
 
 type Options = {
   readonly status?: "returned" | "fainted";

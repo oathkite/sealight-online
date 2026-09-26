@@ -25,7 +25,7 @@ export const GamePanel = ({ character, busy, reportUnseen, settled, actions, onC
       <>
         <WaitingPanel phase={phase} />
         <section className="panel" aria-label="留守の間にできること">
-          <Gear character={character} busy={busy} canEquip={false} onEquip={actions.equip} onUnequip={actions.unequip} onSell={actions.sell} />
+          <Gear character={character} busy={busy} canEquip={false} onEquip={actions.equip} onUnequip={actions.unequip} onSell={actions.sell} onForge={actions.forge} />
           <Shop gold={character.gold} clearedDepth={character.clearedDepth} busy={busy} onBuy={actions.buy} />
         </section>
       </>

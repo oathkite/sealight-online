@@ -32,6 +32,7 @@ const schemas = {
     quantity: z.number().int().min(1).max(MAX_BUY).default(1),
   }),
   tactics: z.object({ potionThreshold: z.number().int().min(0).max(100) }),
+  forge: z.object({ targetId: z.string().min(1).max(100), materialId: z.string().min(1).max(100) }),
 } as const;
 
 type AppEnv = { Bindings: Env; Variables: { characterId: string } };
@@ -92,4 +93,5 @@ app.post("/me/equip", actionRoute(schemas.equip, (b) => ({ type: "equip", itemId
 app.post("/me/unequip", actionRoute(schemas.unequip, (b) => ({ type: "unequip", slot: b.slot })));
 app.post("/me/sell", actionRoute(schemas.sell, (b) => ({ type: "sell", itemId: b.itemId })));
 app.post("/me/buy", actionRoute(schemas.buy, (b) => ({ type: "buy", sku: b.sku, quantity: b.quantity })));
+app.post("/me/forge", actionRoute(schemas.forge, (b) => ({ type: "forge", targetId: b.targetId, materialId: b.materialId })));
 app.put("/me/tactics", actionRoute(schemas.tactics, (b) => ({ type: "tactics", tactics: b })));

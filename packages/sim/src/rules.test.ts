@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createCharacter, type CharacterState } from "./character";
-import { SHOP, type Equipment } from "./items";
+import { forgeCost, forgeGain, MAX_FORGE, SHOP, type Equipment } from "./items";
 import {
   allocateStat,
   buy,
   departExpedition,
   equip,
+  forge,
   returnFromExpedition,
   sell,
   setTactics,
@@ -27,7 +28,7 @@ const depart = (state: CharacterState, target: number, rations: number): Departu
   return result.value;
 };
 
-const sword: Equipment = { id: "s1", slot: "weapon", name: "鉄の剣", rarity: "common", power: 4, value: 30, affix: null };
+const sword: Equipment = { id: "s1", slot: "weapon", name: "鉄の剣", rarity: "common", power: 4, value: 30, affix: null, forged: 0 };
 const strong = (): CharacterState => ({ ...createCharacter(), stats: { str: 30, vit: 30, luk: 5 } });
 const weak = (): CharacterState => ({ ...createCharacter(), stats: { str: 0, vit: 0, luk: 0 }, potions: 0 });
 
@@ -212,5 +213,50 @@ describe("街での行動", () => {
 
   it("作戦（ポーションを飲む HP）を変えられる", () => {
     expect(ok(setTactics(createCharacter(), { potionThreshold: 50 })).tactics).toEqual({ potionThreshold: 50 });
+  });
+});
+
+describe("鍛冶", () => {
+  const shield: Equipment = { id: "g", slot: "armor", name: "樫の大盾", rarity: "common", power: 4, value: 32, affix: "guard", forged: 0 };
+  const plate: Equipment = { id: "p", slot: "armor", name: "深海の鎧", rarity: "rare", power: 12, value: 180, affix: null, forged: 0 };
+  const dagger: Equipment = { id: "d", slot: "weapon", name: "短剣", rarity: "common", power: 3, value: 15, affix: null, forged: 0 };
+  const base = (): CharacterState => ({ ...createCharacter(), gold: 100, stash: [shield, plate, dagger] });
+
+  it("同じ部位の装備を溶かして鍛える。溶かした物の強さの一部が乗り、特性は残る", () => {
+    const state = ok(forge(base(), "g", "p"));
+    const forged = state.stash.find((i) => i.id === "g");
+    expect(forged).toMatchObject({ power: 4 + forgeGain(plate), affix: "guard", forged: 1 });
+    expect(forged?.value ?? 0).toBeGreaterThan(shield.value);
+    expect(state.stash.some((i) => i.id === "p")).toBe(false);
+    expect(state.gold).toBe(100 - forgeCost(shield));
+  });
+
+  it("身につけている装備も鍛えられる", () => {
+    const worn = { ...base(), equipment: { weapon: null, armor: shield }, stash: [plate] };
+    expect(ok(forge(worn, "g", "p")).equipment.armor?.forged).toBe(1);
+  });
+
+  it("鍛えるほど手間賃が上がり、上限まで鍛えたらそれ以上は鍛えられない", () => {
+    expect(forgeCost({ ...shield, forged: 1 })).toBeGreaterThan(forgeCost(shield));
+    const maxed = { ...base(), stash: [{ ...shield, forged: MAX_FORGE }, plate] };
+    expect(forge(maxed, "g", "p")).toEqual({ ok: false, error: "max_forged" });
+  });
+
+  it("違う部位、自分自身、身につけている物は素材にできない。ない装備は鍛えられない", () => {
+    expect(forge(base(), "g", "d")).toEqual({ ok: false, error: "invalid_material" });
+    expect(forge(base(), "g", "g")).toEqual({ ok: false, error: "invalid_material" });
+    const worn = { ...base(), equipment: { weapon: null, armor: plate }, stash: [shield] };
+    expect(forge(worn, "g", "p")).toEqual({ ok: false, error: "item_not_found" });
+    expect(forge(base(), "missing", "p")).toEqual({ ok: false, error: "item_not_found" });
+  });
+
+  it("手間賃が足りなければ鍛えられない。留守の間は鍛えられない", () => {
+    expect(forge({ ...base(), gold: 0 }, "g", "p")).toEqual({ ok: false, error: "not_enough_gold" });
+    const { state } = depart({ ...strong(), stash: [shield, plate] }, 1, 1);
+    expect(forge(state, "g", "p")).toEqual({ ok: false, error: "not_in_town" });
+  });
+
+  it("素材の強さが低くても、最低 1 は強くなる", () => {
+    expect(forgeGain({ ...dagger, power: 1 })).toBe(1);
   });
 });

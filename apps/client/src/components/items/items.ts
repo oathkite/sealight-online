@@ -25,3 +25,6 @@ export const itemKind = (item: Pick<Equipment, "name" | "slot">): ItemKind =>
 export const gainOver = (item: Equipment, equipment: CharacterState["equipment"]): number => item.power - (equipment[item.slot]?.power ?? 0);
 
 export const statName = (slot: Slot): string => (slot === "weapon" ? "攻" : "防");
+
+/** 鍛える欄の id。開くボタンの aria-controls から指す */
+export const forgePanelId = (itemId: string): string => `forge-${itemId}`;
