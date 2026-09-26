@@ -76,6 +76,40 @@ const setup = (result: ExpeditionResult, character: CharacterState = home()) => 
 };
 
 describe("Journal", () => {
+  it("次への手がかりを出す。特徴のある敵に削られたら、効く特性を教える", () => {
+    const ogre = { kind: "ogre", name: "オーガ", hp: 40, traits: ["heavy"], rare: false } as const;
+    const beaten = resultOf(
+      [
+        { type: "floor", t: 0, depth: 1, direction: "down", hp: 40, rations: 4 },
+        { type: "encounter", t: 30, depth: 1, foe: ogre, hp: 40 },
+        { type: "attack", by: "foe", damage: 40, hp: 0 },
+        { type: "death", t: 40, depth: 1, cause: "battle" },
+      ],
+      "fainted",
+      1,
+    );
+    setup(beaten);
+    const tips = screen.getByRole("region", { name: "次への手がかり" });
+    expect(within(tips).getByText(/オーガ（強打）に一番削られた/)).toBeInTheDocument();
+    expect(within(tips).getByText(/受け止めの防具が効く/)).toBeInTheDocument();
+    expect(within(tips).getByText(/ポーションを持たせていなかった/)).toBeInTheDocument();
+  });
+
+  it("困ったことがなければ、その旨を伝える", () => {
+    const calm = resultOf(
+      [
+        { type: "floor", t: 0, depth: 1, direction: "down", hp: 40, rations: 4 },
+        { type: "turnaround", t: 100, depth: 1 },
+        { type: "floor", t: 150, depth: 1, direction: "up", hp: 40, rations: 4 },
+        { type: "home", t: 300, hp: 40 },
+      ],
+      "returned",
+      1,
+    );
+    setup(calm);
+    expect(within(screen.getByRole("region", { name: "次への手がかり" })).getByText(/困ったことはなかった/)).toBeInTheDocument();
+  });
+
   it("無事に帰ってきたら、目標と到達した階を出し、袋を開けると持ち帰ったものが出てくる", async () => {
     const { user } = setup(returned);
     expect(screen.getByText(/無事に帰ってきた/)).toBeInTheDocument();

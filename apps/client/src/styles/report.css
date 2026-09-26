@@ -141,3 +141,41 @@
   font-family: var(--font-display);
   font-size: 15px;
 }
+
+/* 次への手がかり */
+.advice ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.advice li {
+  position: relative;
+  padding: 8px 10px 8px 30px;
+  border-radius: var(--radius-m);
+  background: rgb(0 0 0 / 0.22);
+  box-shadow: 0 0 0 1px var(--line-soft) inset;
+  line-height: 1.5;
+}
+
+.advice li::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 11px;
+  width: 9px;
+  height: 9px;
+  background: var(--gold-500);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  box-shadow: 0 0 8px rgb(230 180 90 / 0.7);
+}
+
+.advice li.advice-trait {
+  box-shadow: 0 0 0 1px rgb(242 154 79 / 0.45) inset, 0 0 14px rgb(242 154 79 / 0.12);
+}
+
+.advice li.advice-trait::before {
+  background: var(--ember);
+}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { buildJournal, type BattleNote, type CharacterState, type ExpeditionResult } from "@sealight/sim";
+import { buildAdvice, buildJournal, type BattleNote, type CharacterState, type ExpeditionResult } from "@sealight/sim";
+import { adviceText, noAdviceText } from "./advice";
 import { formatDuration, MARGINS } from "./format";
 import { Face } from "./icons/Face";
 import { JournalRowDetail, JournalRowView } from "./JournalRowView";
@@ -13,6 +14,24 @@ const BattleCard = ({ title, note }: { title: string; note: BattleNote }) => (
     </p>
   </section>
 );
+
+/** 次の冒険への手がかり。何にやられたかと、何が効くか */
+const AdviceList = ({ result }: { readonly result: ExpeditionResult }) => {
+  const advice = useMemo(() => buildAdvice(result), [result]);
+  return (
+    <section className="advice" aria-label="次への手がかり">
+      <h3 className="ribbon">次への手がかり</h3>
+      <ul>
+        {advice.length === 0 ? <li>{noAdviceText(result.outcome.status === "returned")}</li> : null}
+        {advice.map((a, i) => (
+          <li key={i} className={`advice-${a.type}`}>
+            {adviceText(a)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
 
 type JournalProps = {
   readonly result: ExpeditionResult;
@@ -53,6 +72,8 @@ export const Journal = ({ result, character, busy, onEquip, onClose }: JournalPr
           <p className="muted">拾ったものは持ち帰れなかった。経験（{outcome.xp}）と地図は残っている</p>
         )}
       </section>
+
+      <AdviceList result={result} />
 
       <section className="journal parchment" aria-label="絵日記">
         <div className="journal-rows">
