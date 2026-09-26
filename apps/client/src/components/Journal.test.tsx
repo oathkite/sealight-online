@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { ExpeditionEvent, ExpeditionResult } from "@sealight/sim";
+import { createCharacter, type CharacterState, type ExpeditionEvent, type ExpeditionResult } from "@sealight/sim";
 import { Journal } from "./Journal";
 
 const slime = { kind: "slime", name: "スライム", hp: 8, traits: [], rare: false } as const;
@@ -65,18 +65,45 @@ const fainted = resultOf(
   1,
 );
 
-const setup = (result: ExpeditionResult) => {
+/** 帰ったあとのキャラ。持ち帰った剣は倉庫に入っている */
+const home = (overrides: Partial<CharacterState> = {}): CharacterState => ({ ...createCharacter(), stash: [sword], ...overrides });
+
+const setup = (result: ExpeditionResult, character: CharacterState = home()) => {
   const onClose = vi.fn();
-  render(<Journal result={result} onClose={onClose} />);
-  return { onClose, user: userEvent.setup() };
+  const onEquip = vi.fn();
+  render(<Journal result={result} character={character} busy={false} onEquip={onEquip} onClose={onClose} />);
+  return { onClose, onEquip, user: userEvent.setup() };
 };
 
 describe("Journal", () => {
-  it("無事に帰ってきたら、目標と到達した階、持ち帰ったものを出す", () => {
-    setup(returned);
+  it("無事に帰ってきたら、目標と到達した階を出し、袋を開けると持ち帰ったものが出てくる", async () => {
+    const { user } = setup(returned);
     expect(screen.getByText(/無事に帰ってきた/)).toBeInTheDocument();
     expect(screen.getByText(/目標 B2/)).toBeInTheDocument();
+    expect(screen.queryByText(/灯火の剣/, { selector: ".report-items *" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "袋を開ける" }));
     expect(screen.getByText(/灯火の剣/, { selector: ".report-items *" })).toBeInTheDocument();
+    expect(screen.getByLabelText("12 G")).toBeInTheDocument();
+  });
+
+  it("珍しい物が入っていると、開ける前から袋の口から光が漏れている", () => {
+    setup(returned);
+    expect(screen.getByText(/青い光が漏れている/)).toBeInTheDocument();
+  });
+
+  it("いまの装備より強ければ差を見せ、その場で装備できる", async () => {
+    const { user, onEquip } = setup(returned);
+    await user.click(screen.getByRole("button", { name: "袋を開ける" }));
+    expect(screen.getByText(/攻 \+8/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "装備する" }));
+    expect(onEquip).toHaveBeenCalledWith("a");
+  });
+
+  it("もう装備している物は「装備中」と出し、装備のボタンは出さない", async () => {
+    const { user } = setup(returned, home({ stash: [], equipment: { weapon: sword, armor: null } }));
+    await user.click(screen.getByRole("button", { name: "袋を開ける" }));
+    expect(screen.getByText("装備中")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "装備する" })).not.toBeInTheDocument();
   });
 
   it("階を通るたびに 1 行の断面図になり、ハートで残りの HP を表す", () => {

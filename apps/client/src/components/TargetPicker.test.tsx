@@ -13,16 +13,28 @@ const setup = (overrides: Partial<CharacterState> = {}, busy = false) => {
 describe("TargetPicker", () => {
   it("目標の階と持たせる食料を選んで送り出す", async () => {
     const { onDepart, user } = setup();
-    await user.selectOptions(screen.getByLabelText("目標の階"), "3");
-    await user.selectOptions(screen.getByLabelText("持たせる食料"), "2");
+    await user.click(screen.getByRole("radio", { name: /地下 3 階/ }));
+    await user.click(screen.getByRole("button", { name: "食料を減らす" }));
+    await user.click(screen.getByRole("button", { name: "食料を減らす" }));
     await user.click(screen.getByRole("button", { name: /送り出す/ }));
     expect(onDepart).toHaveBeenCalledWith(3, 2);
   });
 
-  it("持たせられる食料は、家にある数と荷物の枠のうち少ない方まで", () => {
-    setup({ rations: 3 });
-    const options = screen.getAllByRole("option", { name: /個/ }).map((o) => o.getAttribute("value"));
-    expect(options).toEqual(["0", "1", "2", "3"]);
+  it("持たせられる食料は、家にある数と荷物の枠のうち少ない方まで", async () => {
+    const { user } = setup({ rations: 3 });
+    const more = screen.getByRole("button", { name: "食料を増やす" });
+    expect(more).toBeDisabled();
+    expect(screen.getByRole("group", { name: "持たせる食料" })).toHaveTextContent("3 個");
+    await user.click(screen.getByRole("button", { name: "食料を減らす" }));
+    expect(more).toBeEnabled();
+  });
+
+  it("食料は 0 より減らせない", async () => {
+    const { user } = setup({ rations: 1 });
+    const less = screen.getByRole("button", { name: "食料を減らす" });
+    await user.click(less);
+    expect(less).toBeDisabled();
+    expect(screen.getByRole("group", { name: "持たせる食料" })).toHaveTextContent("0 個");
   });
 
   it("楽に行ける目標なら、モンスターは張り切っている", () => {
@@ -32,8 +44,20 @@ describe("TargetPicker", () => {
 
   it("無理な目標だと、モンスターは怯える", async () => {
     const { user } = setup({ stats: { str: 0, vit: 0, luk: 0 } });
-    await user.selectOptions(screen.getByLabelText("目標の階"), "15");
+    await user.click(screen.getByRole("radio", { name: /地下 15 階/ }));
     expect(screen.getByText(/怯えている/)).toBeInTheDocument();
+  });
+
+  it("キーボードでは、選んでいる階だけに Tab で止まり、矢印キーで選び直す", async () => {
+    const { user } = setup();
+    const first = screen.getByRole("radio", { name: /地下 1 階/ });
+    expect(first).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("radio", { name: /地下 2 階/ })).toHaveAttribute("tabindex", "-1");
+    first.focus();
+    await user.keyboard("{ArrowRight}{ArrowRight}");
+    expect(screen.getByRole("radio", { name: /地下 3 階/ })).toBeChecked();
+    await user.keyboard("{Home}");
+    expect(first).toBeChecked();
   });
 
   it("かかる時間の目安を出す", () => {
@@ -56,7 +80,7 @@ describe("TargetPicker の初期値", () => {
 
   it("無事に帰ったら、前回の目標を初期値にする", () => {
     render(<TargetPicker character={{ ...createCharacter(), bestDepth: 4, lastExpedition: lastExpeditionOf("returned", 4, 4) }} busy={false} onDepart={vi.fn()} />);
-    expect(screen.getByLabelText("目標の階")).toHaveValue("4");
+    expect(screen.getByRole("radio", { name: /地下 4 階/ })).toBeChecked();
   });
 
   it("倒れたら、倒れた階の 1 つ上を初期値にする", () => {
@@ -67,6 +91,6 @@ describe("TargetPicker の初期値", () => {
       outcome: { status: "fainted", reached: 6, hp: 0, maxHp: 32, potions: 0, rations: 0, xp: 0, gold: 0, items: [], durationSec: 1, maps: [] },
     } as const;
     render(<TargetPicker character={{ ...character, bestDepth: 6, lastExpedition }} busy={false} onDepart={vi.fn()} />);
-    expect(screen.getByLabelText("目標の階")).toHaveValue("5");
+    expect(screen.getByRole("radio", { name: /地下 5 階/ })).toBeChecked();
   });
 });

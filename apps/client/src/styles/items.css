@@ -1,0 +1,160 @@
+/* 装備の札 */
+.item-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-m);
+  background: linear-gradient(180deg, rgb(58 42 36 / 0.9), rgb(34 26 30 / 0.95));
+  box-shadow: 0 0 0 1px rgb(154 163 178 / 0.35) inset, 0 4px 10px rgb(0 0 0 / 0.3);
+}
+
+.item-card.rare {
+  background:
+    linear-gradient(110deg, transparent 35%, rgb(127 226 255 / 0.12) 50%, transparent 65%) no-repeat,
+    linear-gradient(180deg, rgb(36 44 70 / 0.95), rgb(24 22 40 / 0.98));
+  background-size: 260% 100%, 100% 100%;
+  box-shadow: var(--glow-arcane), 0 4px 14px rgb(0 0 0 / 0.35);
+  animation: shimmer 3.4s linear infinite;
+}
+
+.item-card.revealing {
+  animation: pop-in 620ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  animation-delay: calc(var(--order, 0) * 260ms + 150ms);
+}
+
+.item-card.rare.revealing {
+  animation:
+    pop-in 720ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both,
+    shimmer 3.4s linear infinite;
+  animation-delay: calc(var(--order, 0) * 260ms + 150ms), 0ms;
+}
+
+.item-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, rgb(255 240 200 / 0.14), rgb(0 0 0 / 0.25));
+  box-shadow: 0 0 0 1px var(--line-soft) inset;
+}
+
+.rare .item-art {
+  background: radial-gradient(circle at 50% 40%, rgb(127 226 255 / 0.35), rgb(10 20 40 / 0.4));
+}
+
+.item-icon {
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5));
+}
+
+.item-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-name {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rare .item-name {
+  color: var(--arcane-200);
+  text-shadow: 0 0 8px rgb(127 226 255 / 0.6);
+}
+
+.rarity {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--arcane-400), var(--arcane-600));
+  color: #052230;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-shadow: none;
+}
+
+.item-stat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.gain {
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gain.up {
+  background: rgb(155 212 110 / 0.18);
+  color: var(--moss);
+}
+
+.gain.down {
+  background: rgb(232 103 94 / 0.15);
+  color: var(--blood);
+}
+
+.gain.same {
+  background: rgb(255 240 200 / 0.08);
+  color: var(--muted);
+}
+
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.item-actions button {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* 珍しい物のまわりに舞うきらめき */
+.sparkles,
+.sparkles::before,
+.sparkles::after {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle, #fff 0 20%, var(--arcane-400) 45%, transparent 70%);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: twinkle 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.sparkles {
+  top: -2px;
+  right: -2px;
+}
+
+.sparkles::before {
+  content: "";
+  top: 40px;
+  left: -44px;
+  animation-delay: 0.6s;
+}
+
+.sparkles::after {
+  content: "";
+  top: 10px;
+  left: -50px;
+  width: 6px;
+  height: 6px;
+  animation-delay: 1.2s;
+}

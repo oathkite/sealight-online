@@ -1,0 +1,111 @@
+/* ボタン。ふだんは木の札、押すと沈む */
+button {
+  position: relative;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: linear-gradient(180deg, #5a4232, #3f2d22);
+  box-shadow: 0 0 0 1px rgb(230 180 90 / 0.35) inset, 0 3px 0 #1c130e, 0 5px 10px rgb(0 0 0 / 0.3);
+  color: var(--gold-200);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 1px rgb(230 180 90 / 0.35) inset, 0 1px 0 #1c130e, 0 2px 6px rgb(0 0 0 / 0.3);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: saturate(0.4);
+}
+
+/* 大事な決定。ルーンの刻まれた石が青く光る */
+button.primary {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background:
+    linear-gradient(110deg, transparent 30%, rgb(213 246 255 / 0.28) 45%, transparent 60%) no-repeat,
+    linear-gradient(180deg, #3d3653, #241f33);
+  background-size: 260% 100%, 100% 100%;
+  color: var(--arcane-200);
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 10px rgb(127 226 255 / 0.8);
+  animation: rune-pulse 2.6s ease-in-out infinite, shimmer 3.2s linear infinite;
+}
+
+button.primary:disabled {
+  animation: none;
+}
+
+/* 金の決定（報告を閉じるなど） */
+button.gold {
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-500) 55%, var(--gold-700));
+  box-shadow: 0 0 0 1px rgb(255 240 200 / 0.6) inset, 0 3px 0 #5b3e14, 0 6px 14px rgb(0 0 0 / 0.35);
+  color: #3a250d;
+  text-shadow: 0 1px 0 rgb(255 240 200 / 0.6);
+}
+
+/* 小さな宝石のボタン（能力を上げる + など） */
+button.gem {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 8%, var(--arcane-400) 30%, var(--arcane-600) 75%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.4) inset, 0 0 12px rgb(127 226 255 / 0.6);
+  color: #062633;
+  font-weight: 800;
+  animation: bob 1.6s ease-in-out infinite;
+}
+
+select {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: var(--night-800);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  color: inherit;
+  font: inherit;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.list {
+  display: grid;
+  gap: 6px;
+}
+
+.list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}

@@ -1,0 +1,145 @@
+/* 上の帯 */
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.crest {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  background: linear-gradient(180deg, var(--gold-200), var(--gold-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.7));
+}
+
+.hud-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hud-fps {
+  font-size: 11px;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px #000;
+}
+
+.hud-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.settings {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 46px);
+  right: 12px;
+  width: min(320px, calc(100vw - 24px));
+}
+
+.settings-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.settings-options button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  text-align: left;
+}
+
+.settings-options button span {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.settings-options button.selected {
+  box-shadow: var(--glow-arcane), 0 3px 0 #0b0a12;
+  color: var(--arcane-200);
+}
+
+/* 冒険中 */
+.waiting {
+  grid-template-columns: 64px 1fr;
+  align-items: stretch;
+}
+
+.shaft {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  padding: 6px 0 6px 30px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgb(58 167 214 / 0.06), rgb(0 0 0 / 0.45)), repeating-linear-gradient(0deg, transparent 0 22px, rgb(230 180 90 / 0.08) 22px 23px);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  min-height: 150px;
+}
+
+.shaft-floor {
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.shaft-token {
+  position: absolute;
+  top: calc(4px + var(--depth, 0) * (100% - 38px));
+  left: 2px;
+  filter: drop-shadow(0 0 8px rgb(127 226 255 / 0.6));
+  transition: top 1s linear;
+  animation: bob 1.4s ease-in-out infinite;
+}
+
+.waiting-body {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: left;
+}
+
+.elapsed {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gold-300);
+  text-shadow: 0 0 14px rgb(230 180 90 / 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.mutter {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--arcane-600);
+  color: var(--arcane-200);
+  font-style: italic;
+}
+
+/* 帰ってくる足音 */
+.homecoming div {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold-300);
+  animation: bob 1.2s ease-in-out infinite;
+}

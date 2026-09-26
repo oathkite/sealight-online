@@ -26,7 +26,7 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
 describe("TownPanel", () => {
   it("目標を決めて送り出す", async () => {
     const { actions, user } = setup();
-    await user.selectOptions(screen.getByLabelText("目標の階"), "2");
+    await user.click(screen.getByRole("radio", { name: /地下 2 階/ }));
     await user.click(screen.getByRole("button", { name: /送り出す/ }));
     expect(actions.depart).toHaveBeenCalledWith(2, expect.any(Number));
   });

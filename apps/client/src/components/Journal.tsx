@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
-import { buildJournal, type BattleNote, type ExpeditionResult } from "@sealight/sim";
-import { formatDuration, itemLabel, MARGINS } from "./format";
+import { buildJournal, type BattleNote, type CharacterState, type ExpeditionResult } from "@sealight/sim";
+import { formatDuration, MARGINS } from "./format";
+import { Face } from "./icons/Face";
 import { JournalRowDetail, JournalRowView } from "./JournalRowView";
+import { LootReveal } from "./LootReveal";
 
 const BattleCard = ({ title, note }: { title: string; note: BattleNote }) => (
   <section className="journal-battle" aria-label={title}>
@@ -14,11 +16,17 @@ const BattleCard = ({ title, note }: { title: string; note: BattleNote }) => (
 
 type JournalProps = {
   readonly result: ExpeditionResult;
+  readonly character: CharacterState;
+  readonly busy: boolean;
+  readonly onEquip: (itemId: string) => void;
   readonly onClose: () => void;
 };
 
-/** 帰ってきたモンスターの絵日記。断面図の行を押すと詳しい記録が見られる */
-export const Journal = ({ result, onClose }: JournalProps) => {
+/**
+ * 帰ってきたモンスターの報告。まず持ち帰った袋を開けて宝を見せ、
+ * そのあとに絵日記（断面図の行を押すと詳しい記録が見られる）を広げる
+ */
+export const Journal = ({ result, character, busy, onEquip, onClose }: JournalProps) => {
   const { outcome, input } = result;
   const journal = useMemo(() => buildJournal(result.events, outcome), [result, outcome]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -26,40 +34,38 @@ export const Journal = ({ result, onClose }: JournalProps) => {
   const returned = outcome.status === "returned";
 
   return (
-    <section className="panel journal" aria-label="冒険の報告">
-      <header>
-        <h2>{returned ? "無事に帰ってきた！" : "ボロボロで帰ってきた…"}</h2>
-        <p>
-          目標 B{input.target} ／ 到達 B{outcome.reached} ・ {MARGINS[journal.margin]} ・ {formatDuration(outcome.durationSec)}
-        </p>
+    <section className="panel report" aria-label="冒険の報告">
+      <header className="report-header">
+        <Face expression={returned ? "happy" : "hurt"} size={46} />
+        <div>
+          <h2>{returned ? "無事に帰ってきた！" : "ボロボロで帰ってきた…"}</h2>
+          <p className="muted">
+            目標 B{input.target} ／ 到達 B{outcome.reached} ・ {MARGINS[journal.margin]} ・ {formatDuration(outcome.durationSec)}
+          </p>
+        </div>
       </header>
 
-      <div className="journal-rows">
-        {journal.rows.map((row, i) => (
-          <JournalRowView key={i} row={row} selected={selected === i} onSelect={() => setSelected(selected === i ? null : i)} />
-        ))}
-      </div>
-      {selectedRow ? <JournalRowDetail row={selectedRow} /> : null}
-
-      {journal.hardest ? <BattleCard title="一番苦しかった戦い" note={journal.hardest} /> : null}
-      {journal.final ? <BattleCard title="最期の戦い" note={journal.final} /> : null}
-
       <section className="report-items" aria-label="持ち帰ったもの">
-        <h3>持ち帰ったもの</h3>
+        <h3 className="ribbon">持ち帰ったもの</h3>
         {returned ? (
-          <ul>
-            <li>{outcome.gold} G</li>
-            {outcome.items.map((item) => (
-              <li key={item.id}>{itemLabel(item)}</li>
-            ))}
-            <li>経験値 {outcome.xp}</li>
-          </ul>
+          <LootReveal gold={outcome.gold} xp={outcome.xp} items={outcome.items} character={character} busy={busy} onEquip={onEquip} />
         ) : (
-          <p>拾ったものは持ち帰れなかった。経験（{outcome.xp}）と地図は残っている</p>
+          <p className="muted">拾ったものは持ち帰れなかった。経験（{outcome.xp}）と地図は残っている</p>
         )}
       </section>
 
-      <button type="button" className="primary" onClick={onClose}>
+      <section className="journal parchment" aria-label="絵日記">
+        <div className="journal-rows">
+          {journal.rows.map((row, i) => (
+            <JournalRowView key={i} row={row} selected={selected === i} onSelect={() => setSelected(selected === i ? null : i)} />
+          ))}
+        </div>
+        {selectedRow ? <JournalRowDetail row={selectedRow} /> : null}
+        {journal.hardest ? <BattleCard title="一番苦しかった戦い" note={journal.hardest} /> : null}
+        {journal.final ? <BattleCard title="最期の戦い" note={journal.final} /> : null}
+      </section>
+
+      <button type="button" className="gold" onClick={onClose}>
         閉じる
       </button>
     </section>

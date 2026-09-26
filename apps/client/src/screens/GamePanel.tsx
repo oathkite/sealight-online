@@ -34,11 +34,13 @@ export const GamePanel = ({ character, busy, reportUnseen, settled, actions, onC
   // 帰ってくる姿を見せている間は、持ち帰ったものも報告もまだ明かさない
   if (!settled) {
     return (
-      <section className="panel compact" aria-label="おかえり">
+      <section className="panel compact homecoming" aria-label="おかえり">
         <div>{lastExpedition?.outcome.status === "fainted" ? "足を引きずる音が聞こえる…" : "足音が聞こえる。帰ってきた！"}</div>
       </section>
     );
   }
-  if (reportUnseen && lastExpedition) return <Journal result={lastExpedition} onClose={onCloseReport} />;
+  if (reportUnseen && lastExpedition) {
+    return <Journal result={lastExpedition} character={character} busy={busy} onEquip={actions.equip} onClose={onCloseReport} />;
+  }
   return <TownPanel character={character} busy={busy} actions={actions} />;
 };

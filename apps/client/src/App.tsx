@@ -5,15 +5,14 @@ import { loadCharacterId } from "@/character/characterId";
 import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
 import { HomeView } from "@/game/HomeView";
-import { loadGraphicsSetting } from "@/game/graphics";
+import { loadGraphicsSetting, saveGraphicsSetting, type GraphicsSetting } from "@/game/graphics";
 import { skyAt } from "@/game/lighting";
 import { useClockHour } from "@/game/useClockHour";
+import { Hud } from "@/hud/Hud";
 import { useStage } from "@/scene/useStage";
 import { GamePanel } from "@/screens/GamePanel";
 import { usePanelActions } from "@/screens/usePanelActions";
 
-/** 画質の設定（URL の ?quality= か、保存した設定。なければ自動） */
-const GRAPHICS = loadGraphicsSetting();
 
 export const App = () => {
   const api = useMemo(() => createCharacterApi(loadCharacterId()), []);
@@ -22,6 +21,11 @@ export const App = () => {
   const { character, error, busy } = view;
   const [fps, setFps] = useState(0);
   const hour = useClockHour();
+  const [graphics, setGraphics] = useState<GraphicsSetting>(loadGraphicsSetting);
+  const chooseGraphics = (setting: GraphicsSetting): void => {
+    saveGraphicsSetting(setting);
+    setGraphics(setting);
+  };
 
   const lastExpedition = character?.lastExpedition ?? null;
   const { unseen, markSeen } = useSeenReport(lastExpedition);
@@ -38,8 +42,8 @@ export const App = () => {
   return (
     <main className="app">
       <CrayonFilter />
-      <HomeView stage={stage} mood={mood} hour={hour} quality={GRAPHICS} onStats={(stats) => setFps(stats.fps)} />
-      <div className="hud-fps">{fps} fps</div>
+      <HomeView stage={stage} mood={mood} hour={hour} quality={graphics} onStats={(stats) => setFps(stats.fps)} />
+      <Hud fps={fps} graphics={graphics} onGraphics={chooseGraphics} />
       <div className="overlay">
         {error ? <p className="error">エラー：{error}</p> : null}
         {character ? (

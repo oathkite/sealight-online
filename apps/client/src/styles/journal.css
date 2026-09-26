@@ -1,0 +1,109 @@
+/* 絵日記は、罫線の入った羊皮紙に見せる */
+.journal {
+  --paper-ink: var(--parchment-ink);
+  --paper-muted: var(--parchment-muted);
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, rgb(120 90 60 / 0.14) 27px 28px),
+    var(--grain),
+    linear-gradient(180deg, var(--parchment), var(--parchment-shade));
+}
+
+.journal h2,
+.journal h3 {
+  font-family: "Hiragino Maru Gothic ProN", "Zen Maru Gothic", system-ui, sans-serif;
+}
+
+.journal header p {
+  margin: 0;
+  color: var(--paper-muted);
+}
+
+.journal-rows {
+  display: grid;
+  gap: 4px;
+}
+
+.journal-row {
+  display: grid;
+  width: 100%;
+  box-shadow: none;
+  color: var(--parchment-ink);
+  font-weight: 400;
+  grid-template-columns: 40px 26px 88px auto 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1.5px dashed rgb(58 46 40 / 0.25);
+  background: rgb(255 255 255 / 0.35);
+  text-align: left;
+}
+
+.journal-row.selected {
+  border-style: solid;
+  border-color: #d88a3a;
+  background: rgb(255 210 122 / 0.3);
+}
+
+.journal-depth {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.heart-meter,
+.journal-bread,
+.journal-foe {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
+}
+
+.journal-events {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  color: var(--paper-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.journal-detail,
+.journal-battle {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.45);
+}
+
+.journal-detail ul {
+  display: grid;
+  gap: 2px;
+}
+
+.journal-detail li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.journal-battle p {
+  margin: 0;
+}
+
+.journal .trait {
+  background: rgb(242 107 91 / 0.18);
+  color: #b0402f;
+}
+
+
+.trait {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(255 122 106 / 0.2);
+  color: var(--foe);
+  font-size: 12px;
+}

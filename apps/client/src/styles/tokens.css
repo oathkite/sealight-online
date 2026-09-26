@@ -1,0 +1,133 @@
+/*
+ * 中世ファンタジーの冒険者の手帳。夜の革、羊皮紙、真鍮と金、ルーンの青い光。
+ * 形は丸く柔らかく、色は少し暗めにして、灯りと魔法の光が引き立つようにする
+ */
+:root {
+  --night-950: #0e0c16;
+  --night-900: #15121f;
+  --night-800: #1d1929;
+  --night-700: #282235;
+  --night-600: #362e45;
+  --leather: #3a2a24;
+  --leather-light: #56402f;
+  --parchment: #f1e3c2;
+  --parchment-shade: #dcc596;
+  --parchment-ink: #3b2a1e;
+  --parchment-muted: #7a6450;
+  --gold-200: #fff0c8;
+  --gold-300: #ffe1a0;
+  --gold-500: #e6b45a;
+  --gold-700: #a7742d;
+  --ember: #f29a4f;
+  --arcane-200: #d5f6ff;
+  --arcane-400: #7fe2ff;
+  --arcane-600: #3aa7d6;
+  --moss: #9bd46e;
+  --blood: #e8675e;
+  --text: #f3e7cf;
+  --muted: #b3a58d;
+  --line: rgb(230 180 90 / 0.22);
+  --line-soft: rgb(255 240 200 / 0.08);
+
+  /* 以前の名前（絵日記などが使う） */
+  --bg: var(--night-900);
+  --panel: rgb(21 18 31 / 0.9);
+  --accent: var(--gold-500);
+  --accent-ink: var(--night-900);
+  --danger: var(--blood);
+  --hp: var(--moss);
+  --foe: #ff7a6a;
+
+  --font-display: "Hiragino Maru Gothic ProN", "Zen Maru Gothic", "Rounded M+ 1c", system-ui, sans-serif;
+  --font-body: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+
+  --radius-l: 18px;
+  --radius-m: 12px;
+  --radius-s: 8px;
+  --shadow-deep: 0 18px 40px rgb(0 0 0 / 0.45), 0 2px 0 rgb(255 230 170 / 0.05) inset;
+  --glow-arcane: 0 0 0 1px rgb(127 226 255 / 0.55), 0 0 18px rgb(127 226 255 / 0.35);
+  --glow-gold: 0 0 0 1px rgb(230 180 90 / 0.6), 0 0 16px rgb(230 180 90 / 0.3);
+
+  /* 羊皮紙と革の細かなざらつき（SVG の雑音） */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* 四隅の飾り（金の唐草） */
+  --corner: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M2 26V9c0-4 3-7 7-7h17' fill='none' stroke='%23e6b45a' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M6 22V11c0-2.5 2-4.5 4.5-4.5H22' fill='none' stroke='%23e6b45a' stroke-opacity='.45' stroke-width='1.2' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='9' r='1.8' fill='%23ffe1a0'/%3E%3C/svg%3E");
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -180% 0;
+  }
+  to {
+    background-position: 180% 0;
+  }
+}
+
+@keyframes rune-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgb(127 226 255 / 0.5), 0 0 14px rgb(127 226 255 / 0.25), 0 6px 0 #0b0a12;
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgb(127 226 255 / 0.85), 0 0 26px rgb(127 226 255 / 0.5), 0 6px 0 #0b0a12;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.6) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.06) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
