@@ -1,19 +1,19 @@
 import { useMemo, useState } from "react";
-import { Canvas } from "@react-three/fiber";
 import { createCharacterApi } from "@/api/characterApi";
 import { CrayonFilter } from "@/components/icons/Icon";
 import { loadCharacterId } from "@/character/characterId";
 import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
-import { FpsProbe } from "@/hud/FpsProbe";
-import { HomeScene } from "@/scene/HomeScene";
+import { HomeView } from "@/game/HomeView";
+import { skyAt } from "@/game/lighting";
+import { useClockHour } from "@/game/useClockHour";
 import { useStage } from "@/scene/useStage";
-import { useTimeOfDay } from "@/scene/useTimeOfDay";
 import { GamePanel } from "@/screens/GamePanel";
 import { usePanelActions } from "@/screens/usePanelActions";
 
 const params = new URLSearchParams(window.location.search);
-const SHADOWS = params.get("shadows") !== "0";
+/** ?quality=low（または以前の ?shadows=0）で、影を粗くして軽くする */
+const QUALITY = params.get("quality") === "low" || params.get("shadows") === "0" ? "low" : "high";
 
 export const App = () => {
   const api = useMemo(() => createCharacterApi(loadCharacterId()), []);
@@ -21,7 +21,7 @@ export const App = () => {
   const actions = usePanelActions(api, view);
   const { character, error, busy } = view;
   const [fps, setFps] = useState(0);
-  const lighting = useTimeOfDay();
+  const hour = useClockHour();
 
   const lastExpedition = character?.lastExpedition ?? null;
   const { unseen, markSeen } = useSeenReport(lastExpedition);
@@ -30,7 +30,7 @@ export const App = () => {
   // ボロボロで帰ってきた（または余裕がなかった）ときは、見た目で分かるようにする
   const mood = {
     hurt: outcome !== undefined && outcome.hp / outcome.maxHp < 0.4,
-    sleepy: lighting.lamp > 0.85,
+    sleepy: skyAt(hour).lamp > 0.85,
     carrying: outcome !== undefined && outcome.status === "returned" && (outcome.items.length > 0 || outcome.gold > 0),
   };
   const stage = useStage(present, mood.hurt);
@@ -38,10 +38,7 @@ export const App = () => {
   return (
     <main className="app">
       <CrayonFilter />
-      <Canvas flat shadows={SHADOWS ? "soft" : false} dpr={[1, 1.5]}>
-        <HomeScene stage={stage} mood={mood} lighting={lighting} />
-        <FpsProbe onReport={setFps} />
-      </Canvas>
+      <HomeView stage={stage} mood={mood} hour={hour} quality={QUALITY} onStats={(stats) => setFps(stats.fps)} />
       <div className="hud-fps">{fps} fps</div>
       <div className="overlay">
         {error ? <p className="error">エラー：{error}</p> : null}

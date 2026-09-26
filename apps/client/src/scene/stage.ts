@@ -1,9 +1,9 @@
-import { alongRoute, ROUTE, SPOTS, type Vec3 } from "./layout";
+import { alongRoute, ROUTE, STAIRS, type Vec3 } from "./layout";
 
 /** モンスターの場面。送り出しと帰りの間だけ、道を歩く演出が入る */
 export type Act = "home" | "leaving" | "away" | "arriving";
 
-/** Blender で付けたアニメーションの名前（art/monster_anim.py） */
+/** モンスターの動きの名前（game/monster/clips.ts） */
 export type Clip = "idle" | "hop" | "droop" | "cheer" | "sleep";
 
 export type Mood = {
@@ -26,9 +26,8 @@ export type Pose = {
   readonly sack: boolean;
 };
 
-/** 寝床ではカメラの方を向いて座る */
-const HOME_HEADING = Math.PI / 4;
-const DEPTH_BELOW = -0.75;
+/** 寝床ではカメラの方（手前）を向いて座る */
+const HOME_HEADING = 0;
 
 const LEAVE = { turn: 0.5, walk: 2.6, descend: 1.1 } as const;
 const ARRIVE = { emerge: 1.0, land: 1.4 } as const;
@@ -50,11 +49,11 @@ const turnTo = (from: number, to: number, t: number): number => {
   return from + diff * t;
 };
 
-const routeEnd = ROUTE.at(-1) ?? SPOTS.gate;
+const routeEnd = ROUTE.at(-1) ?? STAIRS;
 /** 入口の階段の奥（地面の下）。ここから降りていき、ここから上がってくる */
-const stairsBottom: Vec3 = [lerp(routeEnd[0], SPOTS.gate[0], 1.6), DEPTH_BELOW, lerp(routeEnd[2], SPOTS.gate[2], 1.6)];
+const stairsBottom = STAIRS;
 const stairsHeading = Math.atan2(stairsBottom[0] - routeEnd[0], stairsBottom[2] - routeEnd[2]);
-const homePosition = ROUTE[0] ?? SPOTS.bed;
+const homePosition: Vec3 = ROUTE[0] ?? [0, 0, 0];
 
 const between = (from: Vec3, to: Vec3, t: number): Vec3 => [lerp(from[0], to[0], t), lerp(from[1], to[1], t), lerp(from[2], to[2], t)];
 

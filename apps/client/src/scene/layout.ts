@@ -1,25 +1,13 @@
-import spots from "./spots.json";
+import { pathPoints } from "@sealight/engine";
+import { ROUTE_TILES, STAIRS_BOTTOM } from "@/game/layout";
 
 export type Vec3 = readonly [number, number, number];
 
-const toVec3 = (values: readonly number[]): Vec3 => [values[0] ?? 0, values[1] ?? 0, values[2] ?? 0];
+/** 寝床からダンジョンの入口の門の下までの道（マスの中心を結ぶ）。送り出しと帰りはこの上を歩く */
+export const ROUTE: readonly Vec3[] = pathPoints(ROUTE_TILES);
 
-/**
- * 家の場面の配置。カメラは右手前の斜め上から見下ろす（+x と +z の面が見える）。
- * Blender のモデル（art/build_home.py）も同じ spots.json を読んで作る
- */
-export const SPOTS = {
-  hut: toVec3(spots.spots.hut),
-  field: toVec3(spots.spots.field),
-  bed: toVec3(spots.spots.bed),
-  bowl: toVec3(spots.spots.bowl),
-  lantern: toVec3(spots.spots.lantern),
-  woodpile: toVec3(spots.spots.woodpile),
-  gate: toVec3(spots.spots.gate),
-} as const satisfies Record<string, Vec3>;
-
-/** 寝床からダンジョンの入口までの道。送り出しと帰りはこの上を歩く */
-export const ROUTE: readonly Vec3[] = spots.route.map(toVec3);
+/** 入口の階段の底（地面の下） */
+export const STAIRS: Vec3 = STAIRS_BOTTOM;
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 

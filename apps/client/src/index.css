@@ -82,6 +82,22 @@ select {
   inset: 0;
 }
 
+.home-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.home-failure {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--muted);
+}
+
 .hud-fps {
   position: absolute;
   top: max(8px, env(safe-area-inset-top));

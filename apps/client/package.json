@@ -17,6 +17,7 @@
     "@capacitor/local-notifications": "^8.3.1",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "@sealight/engine": "workspace:*",
     "@sealight/sim": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-notification": "^2.4.0",
