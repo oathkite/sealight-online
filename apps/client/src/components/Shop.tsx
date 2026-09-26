@@ -40,7 +40,7 @@ const ConsumableRow = ({ sku, kind, gold, busy, onBuy }: RowProps & { readonly k
       </span>
       <span className="product-name">
         {name}
-        <span className="muted">（{hint}・{price} G）</span>
+        <span className="muted">{hint}・{price} G</span>
       </span>
       <span className="bundles">
         {BUNDLES.map((n) => (

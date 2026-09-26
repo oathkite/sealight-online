@@ -2,8 +2,8 @@
 .item-card {
   position: relative;
   display: grid;
-  grid-template-columns: 52px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 52px 1fr;
+  gap: 8px 10px;
   width: 100%;
   align-items: center;
   padding: 8px 10px;
@@ -113,9 +113,11 @@
   color: var(--muted);
 }
 
+/* ボタンは 2 段目に並べ、狭い列でも名前を潰さない */
 .item-actions {
   display: flex;
   flex-wrap: wrap;
+  grid-column: 1 / -1;
   gap: 6px;
   justify-content: flex-end;
 }
@@ -161,7 +163,10 @@
 
 /* 特性の札。効く相手ごとに色を変える */
 .affix {
+  display: inline-block;
+  margin-left: 4px;
   padding: 0 7px;
+  white-space: nowrap;
   border-radius: 6px;
   background: rgb(230 180 90 / 0.18);
   box-shadow: 0 0 0 1px rgb(230 180 90 / 0.45) inset;

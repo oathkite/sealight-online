@@ -301,8 +301,9 @@ button.depart {
   font-variant-numeric: tabular-nums;
 }
 
+/* 狭い列でも名前が崩れないよう、買う数のボタンは 2 段目に並べる */
 .product.consumable {
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: 34px 1fr;
   padding: 6px 8px;
   border-radius: var(--radius-m);
   background: rgb(0 0 0 / 0.18);
@@ -310,13 +311,15 @@ button.depart {
 }
 
 .product-name .muted {
-  margin-left: 4px;
+  display: block;
   font-size: 12px;
 }
 
 .bundles {
   display: flex;
+  grid-column: 1 / -1;
   gap: 4px;
+  justify-content: flex-end;
 }
 
 .bundles button {
