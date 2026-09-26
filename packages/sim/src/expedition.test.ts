@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { simulateExpedition } from "./expedition";
-import type { ExpeditionInput, ExpeditionLoadout, LootSource } from "./expedition-types";
+import { PACE, type ExpeditionInput, type ExpeditionLoadout, type LootSource } from "./expedition-types";
 import { generateFloor } from "./floor";
 import { toIndex } from "./path";
 
@@ -112,6 +112,16 @@ describe("simulateExpedition", () => {
       if (e.item.id !== latest) swapped += 1;
     }
     expect(swapped).toBeGreaterThan(0);
+  });
+
+  it("ポーションも荷物の枠を使う。食料とポーションで枠が埋まっていれば、装備は持ち帰れない", () => {
+    // 飲まない作戦にして、ポーションの枠が空かないようにする
+    const packed = { ...strong, rations: 0, potions: PACE.bagCapacity, stats: { ...strong.stats, luk: 30 } };
+    const { events, outcome } = simulateExpedition(input({ target: 3, loadout: packed, potionThreshold: 0 }));
+    const found = events.filter((e) => e.type === "loot" && e.loot.type === "item").length;
+    expect(found).toBeGreaterThan(0);
+    expect(events.filter((e) => e.type === "bagFull")).toHaveLength(found);
+    expect(outcome.items).toEqual([]);
   });
 
   it("持ち帰る装備の ID は一意", () => {

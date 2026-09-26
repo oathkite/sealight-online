@@ -13,7 +13,8 @@ export type TownActions = {
   readonly buy: (sku: ShopSku, quantity: number) => void;
   readonly setTactics: (tactics: Tactics) => void;
   readonly forge: (targetId: string, materialId: string) => void;
-  readonly depart: (target: number, rations: number) => void;
+  readonly depart: (target: number, rations: number, potions: number) => void;
+  readonly restock: (rations: number, potions: number) => void;
 };
 
 type TownPanelProps = {
@@ -26,7 +27,7 @@ type TownPanelProps = {
 export const TownPanel = ({ character, busy, actions }: TownPanelProps) => (
   <section className="panel town" aria-label="家">
     <CharacterSheet character={character} busy={busy} onAllocate={actions.allocate} />
-    <TargetPicker character={character} busy={busy} onDepart={actions.depart} />
+    <TargetPicker character={character} busy={busy} onDepart={actions.depart} onRestock={actions.restock} />
     <div className="town-columns">
       <Gear
         character={character}

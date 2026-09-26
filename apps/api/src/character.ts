@@ -12,6 +12,7 @@ import {
   STATE_VERSION,
   unequip,
   type CharacterState,
+  type DepartureRequest,
   type ExpeditionResult,
   type RuleResult,
   type ShopSku,
@@ -28,6 +29,9 @@ export type Action =
   | { readonly type: "buy"; readonly sku: ShopSku; readonly quantity: number }
   | { readonly type: "tactics"; readonly tactics: Tactics }
   | { readonly type: "forge"; readonly targetId: string; readonly materialId: string };
+
+/** 送り出すときに選ぶもの。目標の階と、持たせる食料とポーション */
+export type Loadout = Pick<DepartureRequest, "target" | "rations" | "potions">;
 
 /** 帰る時刻と結果。帰る時刻まで、画面には渡さない */
 type Pending = { readonly endsAt: number; readonly result: ExpeditionResult };
@@ -93,9 +97,9 @@ export class Character extends DurableObject<Env> {
     return this.settle(await this.load());
   }
 
-  async explore(target: number, rations: number, timeScale: number): Promise<RuleResult> {
+  async explore(load: Loadout, timeScale: number): Promise<RuleResult> {
     const state = await this.state();
-    const departed = departExpedition(state, { target, rations, seed: randomSeed(), now: Date.now(), timeScale });
+    const departed = departExpedition(state, { ...load, seed: randomSeed(), now: Date.now(), timeScale });
     if (!departed.ok) return departed;
     const { endsAt, result } = departed.value;
     await this.ctx.storage.put(PENDING_KEY, { endsAt, result } satisfies Pending);

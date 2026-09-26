@@ -17,7 +17,7 @@ export const PACE = {
   hungerEveryMoves: 4,
   /** 帰り道に新しく湧く敵の量（行きの敵の数に対する割合） */
   returnSpawnRatio: 0.3,
-  /** 荷物の枠。食料 1 つで 1 枠を使う */
+  /** 荷物の枠。食料とポーションは 1 つで 1 枠を使う */
   bagCapacity: 12,
   /** 目標の階の宝のレア率の上乗せ */
   goalRareBonus: 0.3,

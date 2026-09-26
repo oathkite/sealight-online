@@ -14,6 +14,7 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
     setTactics: vi.fn(),
     forge: vi.fn(),
     depart: vi.fn(),
+    restock: vi.fn(),
   };
   const character: CharacterState = {
     ...createCharacter(),
@@ -32,7 +33,13 @@ describe("TownPanel", () => {
     const { actions, user } = setup();
     await user.click(screen.getByRole("radio", { name: /地下 2 階/ }));
     await user.click(screen.getByRole("button", { name: /送り出す/ }));
-    expect(actions.depart).toHaveBeenCalledWith(2, expect.any(Number));
+    expect(actions.depart).toHaveBeenCalledWith(2, expect.any(Number), expect.any(Number));
+  });
+
+  it("家に足りない食料とポーションを、支度の欄からまとめて買える", async () => {
+    const { actions, user } = setup({ rations: 0, potions: 0, gold: 100 });
+    await user.click(screen.getByRole("button", { name: /足りない分を買う/ }));
+    expect(actions.restock).toHaveBeenCalledWith(4, 1);
   });
 
   it("ポイントがあればステータスを上げられる。なければボタンは出ない", async () => {

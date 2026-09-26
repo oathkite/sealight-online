@@ -22,6 +22,7 @@ const schemas = {
   explore: z.object({
     target: z.number().int().min(1).max(MAX_DEPTH),
     rations: z.number().int().min(0).max(PACE.bagCapacity),
+    potions: z.number().int().min(0).max(PACE.bagCapacity),
   }),
   stats: z.object({ stat: z.enum(["str", "vit", "luk"]) }),
   equip: z.object({ itemId: z.string().min(1).max(100) }),
@@ -85,7 +86,7 @@ app.post("/me/explore", async (c) => {
   if (!timeScale.success) return c.json({ error: "server_misconfigured" }, 500);
   const body = await readBody(c, schemas.explore);
   if (body === null) return c.json({ error: "invalid_body" }, 400);
-  return respond(c, await stubOf(c).explore(body.target, body.rations, timeScale.data));
+  return respond(c, await stubOf(c).explore(body, timeScale.data));
 });
 
 app.post("/me/stats", actionRoute(schemas.stats, (b) => ({ type: "allocate", stat: b.stat })));

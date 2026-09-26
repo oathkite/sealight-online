@@ -12,6 +12,8 @@ export type RuleError =
   | "not_exploring"
   | "invalid_target"
   | "not_enough_rations"
+  | "not_enough_potions"
+  | "bag_overflow"
   | "no_points"
   | "item_not_found"
   | "not_enough_gold"
@@ -25,6 +27,8 @@ export type DepartureRequest = {
   readonly target: number;
   /** 持たせる食料の数 */
   readonly rations: number;
+  /** 持たせるポーションの数。食料と荷物の枠を分け合う */
+  readonly potions: number;
   readonly seed: number;
   readonly now: number;
   /** 何倍速で時間を進めるか。本番は 1 */
@@ -45,11 +49,11 @@ const FIRST_REACH_GOLD_PER_DEPTH = 15;
 const xpToNext = (level: number): number => level * 10;
 const toRealMs = (sec: number, timeScale: number): number => Math.round((sec * 1000) / timeScale);
 
-const expeditionInput = (state: CharacterState, target: number, rations: number): Omit<ExpeditionInput, "seed"> => ({
+const expeditionInput = (state: CharacterState, target: number, rations: number, potions: number): Omit<ExpeditionInput, "seed"> => ({
   target,
   loadout: {
     stats: state.stats,
-    potions: state.potions,
+    potions,
     rations,
     weapon: state.equipment.weapon,
     armor: state.equipment.armor,
@@ -58,21 +62,29 @@ const expeditionInput = (state: CharacterState, target: number, rations: number)
   potionThreshold: state.tactics.potionThreshold,
 });
 
-/** 目標の階と持たせる食料を決めて送り出す。冒険はこの時点で計算し、結果は帰る時刻まで隠す */
-export const departExpedition = (state: CharacterState, request: DepartureRequest): Result<Departure, RuleError> => {
-  if (state.phase.type !== "town") return failure("not_in_town");
-  const { target, rations, seed, now, timeScale } = request;
-  if (!Number.isInteger(target) || target < 1 || target > MAX_DEPTH) return failure("invalid_target");
-  if (!Number.isInteger(rations) || rations < 0 || rations > state.rations || rations > PACE.bagCapacity) {
-    return failure("not_enough_rations");
-  }
+const isCount = (n: number, max: number): boolean => Number.isInteger(n) && n >= 0 && n <= max;
 
-  const input = expeditionInput(state, target, rations);
+/** 目標の階と、持たせる食料とポーションを確かめる */
+const checkDeparture = (state: CharacterState, { target, rations, potions }: DepartureRequest): RuleError | null => {
+  if (state.phase.type !== "town") return "not_in_town";
+  if (!Number.isInteger(target) || target < 1 || target > MAX_DEPTH) return "invalid_target";
+  if (!isCount(rations, Math.min(state.rations, PACE.bagCapacity))) return "not_enough_rations";
+  if (!isCount(potions, state.potions)) return "not_enough_potions";
+  if (rations + potions > PACE.bagCapacity) return "bag_overflow";
+  return null;
+};
+
+/** 目標の階と持たせる食料・ポーションを決めて送り出す。冒険はこの時点で計算し、結果は帰る時刻まで隠す */
+export const departExpedition = (state: CharacterState, request: DepartureRequest): Result<Departure, RuleError> => {
+  const error = checkDeparture(state, request);
+  if (error) return failure(error);
+  const { target, rations, potions, seed, now, timeScale } = request;
+  const input = expeditionInput(state, target, rations, potions);
   const result = simulateExpedition({ ...input, seed });
   const estimate = estimateExpedition(input);
   const departed: CharacterState = {
     ...state,
-    potions: 0,
+    potions: state.potions - potions,
     rations: state.rations - rations,
     phase: {
       type: "exploring",

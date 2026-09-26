@@ -13,7 +13,7 @@ export type CharacterView = {
   /** API を呼んで結果を反映する。失敗したら error に入れる */
   readonly run: (call: () => Promise<ApiResult>) => Promise<void>;
   /** 送り出す。先に通知の許可を取っておく */
-  readonly depart: (target: number, rations: number) => Promise<void>;
+  readonly depart: (target: number, rations: number, potions: number) => Promise<void>;
 };
 
 /** サーバーのキャラ状態を読み込み、行動の結果で更新する。冒険中は帰ってくるまで確認し続ける */
@@ -48,11 +48,11 @@ export const useCharacter = (api: CharacterApi): CharacterView => {
   );
 
   const depart = useCallback(
-    async (target: number, rations: number) => {
+    async (target: number, rations: number, potions: number) => {
       // 通知の許可を待っている間も押せないようにする（二重に送り出さないため）
       setBusy(true);
       await ensureNotificationPermission();
-      apply(await api.explore(target, rations));
+      apply(await api.explore(target, rations, potions));
       setBusy(false);
     },
     [api, apply],

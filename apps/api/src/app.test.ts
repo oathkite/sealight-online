@@ -73,7 +73,7 @@ describe("POST /me/explore", () => {
   it("送り出すと冒険中になり、帰る時刻と結果はレスポンスに含まれない", async () => {
     const c = client();
     await strongCharacter(c);
-    const { status, json, text } = await c.call("POST", "/me/explore", { target: 2, rations: 3 });
+    const { status, json, text } = await c.call("POST", "/me/explore", { target: 2, rations: 3, potions: 0 });
     expect(status).toBe(200);
     expect(json.phase.type).toBe("exploring");
     expect(text).not.toContain("endsAt");
@@ -85,26 +85,43 @@ describe("POST /me/explore", () => {
 
   it("冒険中にもう一度送り出すと 409", async () => {
     const c = client();
-    await c.call("POST", "/me/explore", { target: 1, rations: 1 });
-    const again = await c.call("POST", "/me/explore", { target: 1, rations: 1 });
+    await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 0 });
+    const again = await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 0 });
     expect(again.status).toBe(409);
     expect(again.json.error).toBe("not_in_town");
   });
 
   it("目標や食料の数が不正なら 400、持っている以上の食料は 409", async () => {
     const c = client();
-    expect((await c.call("POST", "/me/explore", { target: 0, rations: 1 })).status).toBe(400);
-    expect((await c.call("POST", "/me/explore", { target: 21, rations: 1 })).status).toBe(400);
-    expect((await c.call("POST", "/me/explore", { target: 1, rations: -1 })).status).toBe(400);
-    const tooMany = await c.call("POST", "/me/explore", { target: 1, rations: 12 });
+    expect((await c.call("POST", "/me/explore", { target: 0, rations: 1, potions: 0 })).status).toBe(400);
+    expect((await c.call("POST", "/me/explore", { target: 21, rations: 1, potions: 0 })).status).toBe(400);
+    expect((await c.call("POST", "/me/explore", { target: 1, rations: -1, potions: 0 })).status).toBe(400);
+    const tooMany = await c.call("POST", "/me/explore", { target: 1, rations: 12, potions: 0 });
     expect(tooMany.status).toBe(409);
     expect(tooMany.json.error).toBe("not_enough_rations");
+  });
+
+  it("ポーションの数が不正なら 400。持っている以上や、食料と合わせて荷物に入りきらなければ 409", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    expect((await c.call("POST", "/me/explore", { target: 1, rations: 1 })).status).toBe(400);
+    expect((await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 1.5 })).status).toBe(400);
+    expect((await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 13 })).status).toBe(400);
+    const lacking = await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 3 });
+    expect(lacking.status).toBe(409);
+    expect(lacking.json.error).toBe("not_enough_potions");
+    await patchState(c, { rations: 12, potions: 5 });
+    const heavy = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: 3 });
+    expect(heavy.status).toBe(409);
+    expect(heavy.json.error).toBe("bag_overflow");
+    const packed = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: 2 });
+    expect(packed.json.potions).toBe(3);
   });
 
   it("帰る時刻を過ぎると結果が反映され、保存したシードで sim を動かした結果と一致する", async () => {
     const c = client();
     await strongCharacter(c);
-    await c.call("POST", "/me/explore", { target: 2, rations: 3 });
+    await c.call("POST", "/me/explore", { target: 2, rations: 3, potions: 0 });
     const pending = await pendingOf(c);
     await expire(c);
     const { json } = await c.call("GET", "/me");
@@ -115,7 +132,7 @@ describe("POST /me/explore", () => {
   it("アラームで結果が反映される。帰る時刻より前に届いた古いアラームでは反映しない", async () => {
     const c = client();
     await strongCharacter(c);
-    await c.call("POST", "/me/explore", { target: 1, rations: 2 });
+    await c.call("POST", "/me/explore", { target: 1, rations: 2, potions: 0 });
     await runInDurableObject(c.stub(), (instance) => instance.alarm());
     expect((await c.call("GET", "/me")).json.phase.type).toBe("exploring");
     const pending = await pendingOf(c);
@@ -189,7 +206,7 @@ describe("街での行動", () => {
 
   it("留守の間も買い物はできるが、装備は変えられない", async () => {
     const c = client();
-    await c.call("POST", "/me/explore", { target: 1, rations: 1 });
+    await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 0 });
     expect((await c.call("POST", "/me/buy", { sku: "ration" })).status).toBe(200);
     const equip = await c.call("POST", "/me/unequip", { slot: "weapon" });
     expect(equip.status).toBe(409);

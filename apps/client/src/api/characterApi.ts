@@ -9,7 +9,7 @@ export type ApiResult = { readonly ok: true; readonly value: CharacterState } | 
 
 export type CharacterApi = {
   readonly fetchMe: () => Promise<ApiResult>;
-  readonly explore: (target: number, rations: number) => Promise<ApiResult>;
+  readonly explore: (target: number, rations: number, potions: number) => Promise<ApiResult>;
   readonly allocate: (stat: StatKey) => Promise<ApiResult>;
   readonly equip: (itemId: string) => Promise<ApiResult>;
   readonly unequip: (slot: Slot) => Promise<ApiResult>;
@@ -46,7 +46,7 @@ export const createCharacterApi = (characterId: string, baseUrl: string = API_UR
 
   return {
     fetchMe: () => call("GET", "/me"),
-    explore: (target, rations) => call("POST", "/me/explore", { target, rations }),
+    explore: (target, rations, potions) => call("POST", "/me/explore", { target, rations, potions }),
     allocate: (stat) => call("POST", "/me/stats", { stat }),
     equip: (itemId) => call("POST", "/me/equip", { itemId }),
     unequip: (slot) => call("POST", "/me/unequip", { slot }),

@@ -13,6 +13,7 @@ const actions: TownActions = {
   forge: vi.fn(),
   setTactics: vi.fn(),
   depart: vi.fn(),
+  restock: vi.fn(),
 };
 
 const returned: CharacterState = {

@@ -22,8 +22,8 @@ const ok = (result: RuleResult): CharacterState => {
   return result.value;
 };
 
-const depart = (state: CharacterState, target: number, rations: number): Departure => {
-  const result = departExpedition(state, { ...TRIP, target, rations });
+const depart = (state: CharacterState, target: number, rations: number, potions = 0): Departure => {
+  const result = departExpedition(state, { ...TRIP, target, rations, potions });
   if (!result.ok) throw new Error(`expected ok, got ${result.error}`);
   return result.value;
 };
@@ -42,11 +42,26 @@ describe("departExpedition", () => {
     expect(result.input.loadout.rations).toBe(4);
   });
 
-  it("持たせた食料とポーションは家から減る", () => {
-    const base = strong();
-    const { state } = depart(base, 1, 3);
+  it("持たせた食料とポーションは家から減り、持たせなかった分は家に残る", () => {
+    const base = { ...strong(), potions: 3 };
+    const { state, result } = depart(base, 1, 3, 1);
     expect(state.rations).toBe(base.rations - 3);
-    expect(state.potions).toBe(0);
+    expect(state.potions).toBe(2);
+    expect(result.input.loadout.potions).toBe(1);
+  });
+
+  it("家にある以上のポーションは持たせられない", () => {
+    expect(departExpedition({ ...strong(), potions: 1 }, { ...TRIP, target: 1, rations: 0, potions: 2 })).toEqual({
+      ok: false,
+      error: "not_enough_potions",
+    });
+    expect(departExpedition(strong(), { ...TRIP, target: 1, rations: 0, potions: -1 })).toEqual({ ok: false, error: "not_enough_potions" });
+  });
+
+  it("食料とポーションは荷物の枠を分け合い、合わせて枠を超えては持たせられない", () => {
+    const stocked = { ...strong(), rations: 20, potions: 20 };
+    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions: 5 })).toEqual({ ok: false, error: "bag_overflow" });
+    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions: 4 }).ok).toBe(true);
   });
 
   it("かかる時間の目安とモンスターの反応を、帰る時刻を漏らさない形で持つ", () => {
@@ -58,27 +73,27 @@ describe("departExpedition", () => {
 
   it("倍速にすると、帰る時刻もその分早くなる", () => {
     const normal = depart(strong(), 1, 2);
-    const fast = departExpedition(strong(), { ...TRIP, timeScale: 10, target: 1, rations: 2 });
+    const fast = departExpedition(strong(), { ...TRIP, timeScale: 10, target: 1, rations: 2, potions: 0 });
     expect(fast.ok && fast.value.endsAt - TRIP.now).toBe(Math.round((normal.endsAt - TRIP.now) / 10));
   });
 
   it("街にいないと送り出せない", () => {
     const { state } = depart(strong(), 1, 1);
-    expect(departExpedition(state, { ...TRIP, target: 1, rations: 0 })).toEqual({ ok: false, error: "not_in_town" });
+    expect(departExpedition(state, { ...TRIP, target: 1, rations: 0, potions: 0 })).toEqual({ ok: false, error: "not_in_town" });
   });
 
   it("目標の階が範囲外なら送り出せない", () => {
-    expect(departExpedition(strong(), { ...TRIP, target: 0, rations: 0 })).toEqual({ ok: false, error: "invalid_target" });
-    expect(departExpedition(strong(), { ...TRIP, target: 21, rations: 0 })).toEqual({ ok: false, error: "invalid_target" });
+    expect(departExpedition(strong(), { ...TRIP, target: 0, rations: 0, potions: 0 })).toEqual({ ok: false, error: "invalid_target" });
+    expect(departExpedition(strong(), { ...TRIP, target: 21, rations: 0, potions: 0 })).toEqual({ ok: false, error: "invalid_target" });
   });
 
   it("持っている以上の食料や、荷物に入りきらない食料は持たせられない", () => {
     const base = strong();
-    expect(departExpedition(base, { ...TRIP, target: 1, rations: base.rations + 1 })).toEqual({
+    expect(departExpedition(base, { ...TRIP, target: 1, rations: base.rations + 1, potions: 0 })).toEqual({
       ok: false,
       error: "not_enough_rations",
     });
-    expect(departExpedition({ ...base, rations: 99 }, { ...TRIP, target: 1, rations: 13 })).toEqual({
+    expect(departExpedition({ ...base, rations: 99 }, { ...TRIP, target: 1, rations: 13, potions: 0 })).toEqual({
       ok: false,
       error: "not_enough_rations",
     });
@@ -88,7 +103,7 @@ describe("departExpedition", () => {
 describe("returnFromExpedition", () => {
   it("無事に帰ると、拾ったもの、お金、残った食料とポーションを持ち帰り、街に戻る", () => {
     const base = { ...strong(), potions: 2 };
-    const { state, result } = depart(base, 2, 4);
+    const { state, result } = depart(base, 2, 4, 2);
     const back = ok(returnFromExpedition(state, result));
     expect(result.outcome.status).toBe("returned");
     expect(back.phase).toEqual({ type: "town" });

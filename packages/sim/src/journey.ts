@@ -88,9 +88,9 @@ const digest = (s: JourneyState, depth: number): void => {
   if (s.me.hp === 0) die(s, depth, "hunger");
 };
 
-/** 荷物に入れる。食料と装備で枠を分け合い、いっぱいなら弱い方の装備を置いてくる */
+/** 荷物に入れる。食料、ポーション、装備で枠を分け合い、いっぱいなら弱い方の装備を置いてくる */
 const pick = (s: JourneyState, depth: number, source: LootSource, item: Equipment): void => {
-  const { bag, left } = stow(s.items, item, PACE.bagCapacity - s.items.length - s.rations);
+  const { bag, left } = stow(s.items, item, PACE.bagCapacity - s.items.length - s.rations - s.me.potions);
   s.items.splice(0, s.items.length, ...bag);
   s.sources.set(item.id, source);
   if (left) s.events.push({ type: "bagFull", t: s.t, depth, source: s.sources.get(left.id) ?? source, item: left });
