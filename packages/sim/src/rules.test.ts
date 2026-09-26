@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createCharacter, type CharacterState } from "./character";
-import type { Equipment } from "./items";
+import { SHOP, type Equipment } from "./items";
 import {
   allocateStat,
   buy,
@@ -174,6 +174,27 @@ describe("街での行動", () => {
     expect(ok(sell(base, "s1")).gold).toBe(base.gold + sword.value);
     expect(ok(buy(base, "ration", "r")).rations).toBe(base.rations + 1);
     expect(ok(buy(base, "potion", "p")).potions).toBe(base.potions + 1);
+  });
+
+  it("食料とポーションはまとめて買える。代金は数のぶんだけかかる", () => {
+    const base = { ...createCharacter(), gold: 100 };
+    const state = ok(buy(base, "ration", "r", 10));
+    expect(state.rations).toBe(base.rations + 10);
+    expect(state.gold).toBe(100 - SHOP.ration.price * 10);
+    expect(ok(buy(base, "potion", "p", 3)).potions).toBe(base.potions + 3);
+  });
+
+  it("まとめて買う数は 1〜99 の整数。装備は 1 つずつ", () => {
+    const rich = { ...createCharacter(), gold: 10_000 };
+    for (const quantity of [0, -1, 1.5, 100]) {
+      expect(buy(rich, "ration", "r", quantity)).toEqual({ ok: false, error: "invalid_quantity" });
+    }
+    expect(buy(rich, "iron-sword", "i", 2)).toEqual({ ok: false, error: "invalid_quantity" });
+  });
+
+  it("まとめ買いの代金が足りなければ、1 つも買わない", () => {
+    const base = { ...createCharacter(), gold: SHOP.potion.price * 2 };
+    expect(buy(base, "potion", "p", 3)).toEqual({ ok: false, error: "not_enough_gold" });
   });
 
   it("お金が足りなければ買えない", () => {

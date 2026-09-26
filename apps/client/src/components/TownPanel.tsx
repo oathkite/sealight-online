@@ -10,7 +10,7 @@ export type TownActions = {
   readonly equip: (itemId: string) => void;
   readonly unequip: (slot: Slot) => void;
   readonly sell: (itemId: string) => void;
-  readonly buy: (sku: ShopSku) => void;
+  readonly buy: (sku: ShopSku, quantity: number) => void;
   readonly setTactics: (tactics: Tactics) => void;
   readonly depart: (target: number, rations: number) => void;
 };

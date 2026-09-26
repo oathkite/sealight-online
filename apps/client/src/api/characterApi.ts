@@ -14,7 +14,7 @@ export type CharacterApi = {
   readonly equip: (itemId: string) => Promise<ApiResult>;
   readonly unequip: (slot: Slot) => Promise<ApiResult>;
   readonly sell: (itemId: string) => Promise<ApiResult>;
-  readonly buy: (sku: ShopSku) => Promise<ApiResult>;
+  readonly buy: (sku: ShopSku, quantity: number) => Promise<ApiResult>;
   readonly setTactics: (tactics: Tactics) => Promise<ApiResult>;
 };
 
@@ -50,7 +50,7 @@ export const createCharacterApi = (characterId: string, baseUrl: string = API_UR
     equip: (itemId) => call("POST", "/me/equip", { itemId }),
     unequip: (slot) => call("POST", "/me/unequip", { slot }),
     sell: (itemId) => call("POST", "/me/sell", { itemId }),
-    buy: (sku) => call("POST", "/me/buy", { sku }),
+    buy: (sku, quantity) => call("POST", "/me/buy", { sku, quantity }),
     setTactics: (tactics) => call("PUT", "/me/tactics", tactics),
   };
 };

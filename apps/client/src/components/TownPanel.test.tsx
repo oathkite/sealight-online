@@ -52,10 +52,13 @@ describe("TownPanel", () => {
     expect(actions.sell).toHaveBeenCalledWith("st1");
   });
 
-  it("店で食料やポーションを買える。お金が足りない商品は押せない", async () => {
-    const { actions, user } = setup({ gold: 20 });
-    await user.click(screen.getByRole("button", { name: /保存食/ }));
-    expect(actions.buy).toHaveBeenCalledWith("ration");
+  it("店で食料やポーションを 1 つずつ、またはまとめて買える。お金が足りない買い方は押せない", async () => {
+    const { actions, user } = setup({ gold: 30 });
+    await user.click(screen.getByRole("button", { name: "保存食を 1 個買う" }));
+    await user.click(screen.getByRole("button", { name: "保存食を 5 個買う" }));
+    expect(actions.buy).toHaveBeenCalledWith("ration", 1);
+    expect(actions.buy).toHaveBeenCalledWith("ration", 5);
+    expect(screen.getByRole("button", { name: "保存食を 10 個買う" })).toBeDisabled();
     expect(screen.getByRole("button", { name: /鋼の剣/ })).toBeDisabled();
   });
 

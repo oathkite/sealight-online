@@ -144,6 +144,19 @@ describe("街での行動", () => {
     expect(expensive.json.error).toBe("not_enough_gold");
   });
 
+  it("食料とポーションはまとめて買える。数が範囲外なら 400、装備を 2 つ以上なら 409", async () => {
+    const c = client();
+    await c.call("GET", "/me");
+    await patchState(c, { gold: 1000 });
+    expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: 10 })).json.rations).toBe(18);
+    expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: 0 })).status).toBe(400);
+    expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: 100 })).status).toBe(400);
+    expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: "5" })).status).toBe(400);
+    const two = await c.call("POST", "/me/buy", { sku: "iron-sword", quantity: 2 });
+    expect(two.status).toBe(409);
+    expect(two.json.error).toBe("invalid_quantity");
+  });
+
   it("買った装備は一意な ID で倉庫に入り、身につけられる", async () => {
     const c = client();
     await c.call("GET", "/me");

@@ -24,7 +24,7 @@ export type Action =
   | { readonly type: "equip"; readonly itemId: string }
   | { readonly type: "unequip"; readonly slot: Slot }
   | { readonly type: "sell"; readonly itemId: string }
-  | { readonly type: "buy"; readonly sku: ShopSku }
+  | { readonly type: "buy"; readonly sku: ShopSku; readonly quantity: number }
   | { readonly type: "tactics"; readonly tactics: Tactics };
 
 /** 帰る時刻と結果。帰る時刻まで、画面には渡さない */
@@ -44,7 +44,7 @@ const applyAction = (state: CharacterState, action: Action): RuleResult => {
     case "sell":
       return sell(state, action.itemId);
     case "buy":
-      return buy(state, action.sku, crypto.randomUUID());
+      return buy(state, action.sku, crypto.randomUUID(), action.quantity);
     case "tactics":
       return setTactics(state, action.tactics);
   }

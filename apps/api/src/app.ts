@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
-import { isShopSku, MAX_DEPTH, PACE, type RuleResult, type ShopSku } from "@sealight/sim";
+import { isShopSku, MAX_BUY, MAX_DEPTH, PACE, type RuleResult, type ShopSku } from "@sealight/sim";
 import type { Action } from "./character";
 
 // 同じ Worker から配信する画面は同一オリジンなので不要。Tauri / Capacitor から呼ぶときのための許可リスト
@@ -27,7 +27,10 @@ const schemas = {
   equip: z.object({ itemId: z.string().min(1).max(100) }),
   unequip: z.object({ slot: z.enum(["weapon", "armor"]) }),
   sell: z.object({ itemId: z.string().min(1).max(100) }),
-  buy: z.object({ sku: z.custom<ShopSku>((v) => typeof v === "string" && isShopSku(v)) }),
+  buy: z.object({
+    sku: z.custom<ShopSku>((v) => typeof v === "string" && isShopSku(v)),
+    quantity: z.number().int().min(1).max(MAX_BUY).default(1),
+  }),
   tactics: z.object({ potionThreshold: z.number().int().min(0).max(100) }),
 } as const;
 
@@ -88,5 +91,5 @@ app.post("/me/stats", actionRoute(schemas.stats, (b) => ({ type: "allocate", sta
 app.post("/me/equip", actionRoute(schemas.equip, (b) => ({ type: "equip", itemId: b.itemId })));
 app.post("/me/unequip", actionRoute(schemas.unequip, (b) => ({ type: "unequip", slot: b.slot })));
 app.post("/me/sell", actionRoute(schemas.sell, (b) => ({ type: "sell", itemId: b.itemId })));
-app.post("/me/buy", actionRoute(schemas.buy, (b) => ({ type: "buy", sku: b.sku })));
+app.post("/me/buy", actionRoute(schemas.buy, (b) => ({ type: "buy", sku: b.sku, quantity: b.quantity })));
 app.put("/me/tactics", actionRoute(schemas.tactics, (b) => ({ type: "tactics", tactics: b })));

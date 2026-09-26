@@ -14,7 +14,8 @@ export type RuleError =
   | "not_enough_rations"
   | "no_points"
   | "item_not_found"
-  | "not_enough_gold";
+  | "not_enough_gold"
+  | "invalid_quantity";
 
 export type RuleResult = Result<CharacterState, RuleError>;
 
@@ -156,13 +157,24 @@ export const sell = (state: CharacterState, itemId: string): RuleResult => {
   return success({ ...state, gold: state.gold + item.value, stash: state.stash.filter((i) => i.id !== itemId) });
 };
 
-/** 店で買う（モンスターの留守中もできる）。装備を買うときは、呼び出し側が一意な ID を渡す */
-export const buy = (state: CharacterState, sku: ShopSku, newItemId: string): RuleResult => {
+/** 一度にまとめて買える数の上限 */
+export const MAX_BUY = 99;
+
+const isValidQuantity = (quantity: number, isEquipment: boolean): boolean =>
+  Number.isInteger(quantity) && quantity >= 1 && quantity <= (isEquipment ? 1 : MAX_BUY);
+
+/**
+ * 店で買う（モンスターの留守中もできる）。食料とポーションはまとめて買え、装備は 1 つずつ。
+ * 装備を買うときは、呼び出し側が一意な ID を渡す
+ */
+export const buy = (state: CharacterState, sku: ShopSku, newItemId: string, quantity = 1): RuleResult => {
   const product = SHOP[sku];
-  if (state.gold < product.price) return failure("not_enough_gold");
-  const paid = { ...state, gold: state.gold - product.price };
-  if (product.type === "potion") return success({ ...paid, potions: paid.potions + 1 });
-  if (product.type === "ration") return success({ ...paid, rations: paid.rations + 1 });
+  if (!isValidQuantity(quantity, product.type === "equipment")) return failure("invalid_quantity");
+  const cost = product.price * quantity;
+  if (state.gold < cost) return failure("not_enough_gold");
+  const paid = { ...state, gold: state.gold - cost };
+  if (product.type === "potion") return success({ ...paid, potions: paid.potions + quantity });
+  if (product.type === "ration") return success({ ...paid, rations: paid.rations + quantity });
   const item = {
     id: newItemId,
     slot: product.slot,

@@ -300,3 +300,28 @@ button.depart {
   color: var(--gold-300);
   font-variant-numeric: tabular-nums;
 }
+
+.product.consumable {
+  grid-template-columns: 34px 1fr auto;
+  padding: 6px 8px;
+  border-radius: var(--radius-m);
+  background: rgb(0 0 0 / 0.18);
+  box-shadow: 0 0 0 1px var(--line-soft) inset;
+}
+
+.product-name .muted {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.bundles {
+  display: flex;
+  gap: 4px;
+}
+
+.bundles button {
+  min-width: 42px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}

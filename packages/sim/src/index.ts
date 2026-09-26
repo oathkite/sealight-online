@@ -40,6 +40,7 @@ export {
   buy,
   departExpedition,
   equip,
+  MAX_BUY,
   returnFromExpedition,
   sell,
   setTactics,

@@ -11,7 +11,7 @@ export const usePanelActions = (api: CharacterApi, { run, depart }: Pick<Charact
       equip: (itemId) => void run(() => api.equip(itemId)),
       unequip: (slot) => void run(() => api.unequip(slot)),
       sell: (itemId) => void run(() => api.sell(itemId)),
-      buy: (sku) => void run(() => api.buy(sku)),
+      buy: (sku, quantity) => void run(() => api.buy(sku, quantity)),
       setTactics: (tactics) => void run(() => api.setTactics(tactics)),
       depart: (target, rations) => void depart(target, rations),
     };
