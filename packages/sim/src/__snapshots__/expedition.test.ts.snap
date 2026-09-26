@@ -2,7 +2,7 @@
 
 exports[`simulateExpedition > 特定のシードの結果が変わらない（乱数の消費順が変わったら検知する） 1`] = `
 {
-  "eventCount": 77,
+  "eventCount": 71,
   "outcome": {
     "durationSec": 1352,
     "gold": 59,
@@ -21,7 +21,7 @@ exports[`simulateExpedition > 特定のシードの結果が変わらない（�
       {
         "affix": null,
         "forged": 0,
-        "id": "42:25",
+        "id": "42:23",
         "name": "革の胸当て",
         "power": 3,
         "rarity": "common",
@@ -37,10 +37,10 @@ exports[`simulateExpedition > 特定のシードの結果が変わらない（�
     ],
     "maxHp": 56,
     "potions": 0,
-    "rations": 3,
+    "rations": 9,
     "reached": 4,
     "status": "returned",
-    "xp": 32,
+    "xp": 44,
   },
 }
 `;

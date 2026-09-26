@@ -12,13 +12,13 @@ export const PACE = {
   /** 宝箱を開けるのにかかる秒数 */
   chestSec: 20,
   /** 食料 1 つで歩ける歩数 */
-  movesPerRation: 60,
+  movesPerRation: 240,
   /** 食料が尽きてから、何歩ごとに HP が 1 減るか */
   hungerEveryMoves: 4,
   /** 帰り道に新しく湧く敵の量（行きの敵の数に対する割合） */
   returnSpawnRatio: 0.3,
   /** 荷物の枠。食料とポーションは 1 つで 1 枠を使う */
-  bagCapacity: 12,
+  bagCapacity: 16,
   /** 目標の階の宝のレア率の上乗せ */
   goalRareBonus: 0.3,
 } as const;

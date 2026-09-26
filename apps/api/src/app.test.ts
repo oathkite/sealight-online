@@ -1,7 +1,7 @@
 import { env, exports } from "cloudflare:workers";
 import { runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { simulateExpedition, STATE_VERSION, type CharacterState, type ExpeditionResult } from "@sealight/sim";
+import { PACE, simulateExpedition, STATE_VERSION, type CharacterState, type ExpeditionResult } from "@sealight/sim";
 
 type Body = Record<string, unknown>;
 type Pending = { readonly endsAt: number; readonly result: ExpeditionResult };
@@ -106,16 +106,16 @@ describe("POST /me/explore", () => {
     await c.call("GET", "/me");
     expect((await c.call("POST", "/me/explore", { target: 1, rations: 1 })).status).toBe(400);
     expect((await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 1.5 })).status).toBe(400);
-    expect((await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 13 })).status).toBe(400);
+    expect((await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: PACE.bagCapacity + 1 })).status).toBe(400);
     const lacking = await c.call("POST", "/me/explore", { target: 1, rations: 1, potions: 3 });
     expect(lacking.status).toBe(409);
     expect(lacking.json.error).toBe("not_enough_potions");
-    await patchState(c, { rations: 12, potions: 5 });
-    const heavy = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: 3 });
+    await patchState(c, { rations: 20, potions: 20 });
+    const heavy = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: PACE.bagCapacity - 9 });
     expect(heavy.status).toBe(409);
     expect(heavy.json.error).toBe("bag_overflow");
-    const packed = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: 2 });
-    expect(packed.json.potions).toBe(3);
+    const packed = await c.call("POST", "/me/explore", { target: 1, rations: 10, potions: PACE.bagCapacity - 10 });
+    expect(packed.json.potions).toBe(20 - (PACE.bagCapacity - 10));
   });
 
   it("帰る時刻を過ぎると結果が反映され、保存したシードで sim を動かした結果と一致する", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createCharacter, type CharacterState } from "./character";
+import { PACE } from "./expedition-types";
 import { forgeCost, forgeGain, MAX_FORGE, SHOP, type Equipment } from "./items";
 import {
   allocateStat,
@@ -60,8 +61,9 @@ describe("departExpedition", () => {
 
   it("食料とポーションは荷物の枠を分け合い、合わせて枠を超えては持たせられない", () => {
     const stocked = { ...strong(), rations: 20, potions: 20 };
-    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions: 5 })).toEqual({ ok: false, error: "bag_overflow" });
-    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions: 4 }).ok).toBe(true);
+    const potions = PACE.bagCapacity - 8;
+    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions: potions + 1 })).toEqual({ ok: false, error: "bag_overflow" });
+    expect(departExpedition(stocked, { ...TRIP, target: 1, rations: 8, potions }).ok).toBe(true);
   });
 
   it("かかる時間の目安とモンスターの反応を、帰る時刻を漏らさない形で持つ", () => {
@@ -93,7 +95,7 @@ describe("departExpedition", () => {
       ok: false,
       error: "not_enough_rations",
     });
-    expect(departExpedition({ ...base, rations: 99 }, { ...TRIP, target: 1, rations: 13, potions: 0 })).toEqual({
+    expect(departExpedition({ ...base, rations: 99 }, { ...TRIP, target: 1, rations: PACE.bagCapacity + 1, potions: 0 })).toEqual({
       ok: false,
       error: "not_enough_rations",
     });

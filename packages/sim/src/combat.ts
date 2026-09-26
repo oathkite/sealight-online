@@ -36,10 +36,12 @@ const damageOf = (rng: Rng, attack: number, defense: number): number => Math.max
 
 const needsPotion = (c: Combatant, threshold: number): boolean => c.potions > 0 && c.hp * 100 < c.maxHp * threshold;
 
-/** こちらの 1 撃。貫きは防御を、薙ぎ払いは群れへのダメージを変える */
+/** こちらの 1 撃。硬い敵にはダメージが半分しか通らない。貫きは硬さと防御を、薙ぎ払いは群れへのダメージを変える */
 const strike = (rng: Rng, me: Combatant, foe: Foe): number => {
-  const defense = me.affixes.includes("pierce") ? Math.floor(foe.defense * (1 - PIERCE_RATIO)) : foe.defense;
+  const pierce = me.affixes.includes("pierce");
+  const defense = pierce ? Math.floor(foe.defense * (1 - PIERCE_RATIO)) : foe.defense;
   const damage = damageOf(rng, me.attack, defense);
+  if (foe.traits.includes("armored") && !pierce) return Math.max(1, Math.floor(damage / 2));
   return me.affixes.includes("sweep") && foe.traits.includes("swarm") ? damage * 2 : damage;
 };
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bandOf, floorConfig, foeAt, spawnFoe } from "./catalog";
+import { bandOf, bandTraits, floorConfig, foeAt, spawnFoe } from "./catalog";
 import { createRng } from "./rng";
 
 describe("floorConfig", () => {
@@ -73,5 +73,14 @@ describe("spawnFoe", () => {
     const a = createRng(5);
     const b = createRng(5);
     expect(Array.from({ length: 20 }, () => spawnFoe(a, 12))).toEqual(Array.from({ length: 20 }, () => spawnFoe(b, 12)));
+  });
+});
+
+describe("bandTraits", () => {
+  it("帯ごとに、出る敵の特徴を重複なく返す", () => {
+    expect(bandTraits(1)).toEqual(["swarm"]);
+    expect(bandTraits(7)).toEqual(["armored"]);
+    expect(bandTraits(12)).toEqual(["heavy"]);
+    expect(bandTraits(20)).toEqual(["fast", "armored", "heavy"]);
   });
 });

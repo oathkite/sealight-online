@@ -4,7 +4,7 @@ export type FoeKind = "slime" | "rat" | "goblin" | "beetle" | "skeleton" | "ogre
 
 /**
  * 敵の特徴。報告から読み取れる失敗の型と、打てる手に対応させる。
- * swarm：群れで連戦になる / armored：硬い / heavy：一撃が重い / fast：1 ラウンドに 2 回攻撃
+ * swarm：群れで連戦になる / armored：硬く、こちらのダメージが半分しか通らない / heavy：一撃が重い / fast：1 ラウンドに 2 回攻撃
  */
 export type Trait = "swarm" | "armored" | "heavy" | "fast";
 
@@ -27,7 +27,7 @@ const FOES = {
   slime: { name: "スライム", hp: 8, attack: 3, defense: 0, xp: 3, traits: [], dropChance: 0.05 },
   rat: { name: "ネズミ", hp: 4, attack: 2, defense: 0, xp: 1, traits: ["swarm"], dropChance: 0.02 },
   goblin: { name: "ゴブリン", hp: 16, attack: 6, defense: 1, xp: 7, traits: [], dropChance: 0.1 },
-  beetle: { name: "甲虫", hp: 14, attack: 5, defense: 6, xp: 8, traits: ["armored"], dropChance: 0.08 },
+  beetle: { name: "甲虫", hp: 18, attack: 11, defense: 6, xp: 8, traits: ["armored"], dropChance: 0.08 },
   skeleton: { name: "スケルトン", hp: 24, attack: 9, defense: 3, xp: 12, traits: [], dropChance: 0.1 },
   ogre: { name: "オーガ", hp: 40, attack: 16, defense: 2, xp: 18, traits: ["heavy"], dropChance: 0.12 },
   wraith: { name: "レイス", hp: 26, attack: 10, defense: 4, xp: 20, traits: ["fast"], dropChance: 0.12 },
@@ -44,6 +44,11 @@ const BAND_FOES = {
 } as const satisfies Record<number, readonly FoeKind[]>;
 
 type Band = keyof typeof BAND_FOES;
+
+/** 1 階深くなるごとの強さの伸び */
+const DEPTH_SCALE = 0.18;
+/** 帯が変わるごとの強さの段差 */
+const BAND_STEP = 0.3;
 
 const RARE_CHANCE = 0.03;
 const ALPHA_CHANCE = 0.02;
@@ -74,7 +79,8 @@ export const floorConfig = (depth: number): FloorConfig => {
 export const foeAt = (kind: FoeKind, depth: number, options: { readonly alpha?: boolean } = {}): Foe => {
   assertPositiveDepth(depth);
   const spec = FOES[kind];
-  const scale = 1 + 0.15 * (depth - 1);
+  // 帯が変わると一段強くなる（新しい特徴の敵に、備えなしでは歯が立ちにくい）
+  const scale = 1 + DEPTH_SCALE * (depth - 1) + BAND_STEP * (bandOf(depth) - 1);
   const alpha = options.alpha === true;
   const power = alpha ? 2 : 1;
   return {
@@ -98,6 +104,9 @@ export const spawnFoe = (rng: Rng, depth: number): Foe => {
   const kind = kinds[rng.int(kinds.length)] ?? "slime";
   return foeAt(kind, depth, { alpha: roll < RARE_CHANCE + ALPHA_CHANCE });
 };
+
+/** その深さの帯に出る敵の特徴（重複なし） */
+export const bandTraits = (depth: number): readonly Trait[] => [...new Set(BAND_FOES[bandOf(depth)].flatMap((kind) => FOES[kind].traits))];
 
 /** 群れの敵は 1 回の遭遇で何体と連戦するか */
 export const swarmSize = (rng: Rng): number => 2 + rng.int(3);

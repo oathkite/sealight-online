@@ -42,7 +42,7 @@ export type Departure = {
   readonly result: ExpeditionResult;
 };
 
-const POINTS_PER_LEVEL = 3;
+const POINTS_PER_LEVEL = 2;
 /** 初めて到達した階から無事に帰ったときの、1 階あたりのご褒美 */
 const FIRST_REACH_GOLD_PER_DEPTH = 15;
 

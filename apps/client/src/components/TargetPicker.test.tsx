@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { createCharacter, type CharacterState } from "@sealight/sim";
+import { createCharacter, PACE, type CharacterState } from "@sealight/sim";
 import { TargetPicker } from "./TargetPicker";
 
 const setup = (overrides: Partial<CharacterState> = {}, busy = false) => {
@@ -23,12 +23,13 @@ describe("TargetPicker", () => {
   });
 
   it("食料とポーションは合わせて荷物の枠まで。空いた枠は拾った物に使うと分かる", async () => {
-    const { user } = setup({ rations: 20 });
+    const { user } = setup({ rations: 30 });
     const more = screen.getByRole("button", { name: "食料を増やす" });
-    for (let i = 0; i < 7; i += 1) await user.click(more);
+    // 初めは食料 4、ポーション 1。ポーションの 1 枠を残して、食料で埋める
+    for (let i = 4; i < PACE.bagCapacity - 1; i += 1) await user.click(more);
     expect(more).toBeDisabled();
-    expect(screen.getByRole("group", { name: "持たせる食料" })).toHaveTextContent("11 個");
-    expect(screen.getByText(/荷物 12 \/ 12/)).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "持たせる食料" })).toHaveTextContent(`${PACE.bagCapacity - 1} 個`);
+    expect(screen.getByText(new RegExp(`荷物 ${PACE.bagCapacity} / ${PACE.bagCapacity}`))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "ポーションを増やす" })).toBeDisabled();
   });
 

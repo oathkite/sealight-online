@@ -93,7 +93,14 @@ const firstRound = (me: Combatant, foe: Foe) => {
 describe("装備の特性", () => {
   const brute = (traits: Foe["traits"], overrides: Partial<Foe> = {}): Foe => ({ ...slime, hp: 999, attack: 20, defense: 0, traits, ...overrides });
 
-  it("貫き：硬い敵の防御をほとんど無視する", () => {
+  it("硬い敵には、ダメージが半分しか通らない", () => {
+    const soft = brute([], { defense: 0 });
+    const shell = brute(["armored"], { defense: 0 });
+    expect(firstRound(hero({ attack: 20 }), soft).mine).toBeGreaterThanOrEqual(19);
+    expect(firstRound(hero({ attack: 20 }), shell).mine).toBeLessThanOrEqual(10);
+  });
+
+  it("貫き：硬い敵にも普通にダメージが通り、防御もほとんど無視する", () => {
     const shell = brute(["armored"], { defense: 10 });
     expect(firstRound(hero({ attack: 12 }), shell).mine).toBeLessThanOrEqual(3);
     expect(firstRound(hero({ attack: 12, affixes: ["pierce"] }), shell).mine).toBeGreaterThanOrEqual(9);

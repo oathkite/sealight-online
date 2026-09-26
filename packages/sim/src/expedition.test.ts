@@ -75,8 +75,8 @@ describe("simulateExpedition", () => {
   });
 
   it("食料を持たせないと飢え、HP が削られる", () => {
-    const fed = simulateExpedition(input({ target: 2 }));
-    const hungry = simulateExpedition(input({ target: 2, loadout: { ...strong, rations: 0 } }));
+    const fed = simulateExpedition(input({ target: 4 }));
+    const hungry = simulateExpedition(input({ target: 4, loadout: { ...strong, rations: 0 } }));
     expect(hungry.events.some((e) => e.type === "starving")).toBe(true);
     expect(fed.events.some((e) => e.type === "starving")).toBe(false);
     expect(hungry.outcome.hp).toBeLessThan(fed.outcome.hp);
