@@ -4,7 +4,7 @@ import { maxHpFor, type Stats } from "./fighter";
 import type { Equipment } from "./items";
 
 /** 保存形式の版。形を変えたら上げ、古い版のキャラは作り直す */
-export const STATE_VERSION = 5;
+export const STATE_VERSION = 6;
 
 export type Tactics = {
   /** HP がこの割合（%）を下回ったらポーションを飲む。0 なら飲まない */

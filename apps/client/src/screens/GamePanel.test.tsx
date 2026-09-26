@@ -21,7 +21,7 @@ const returned: CharacterState = {
   lastExpedition: simulateExpedition({
     seed: 7,
     target: 1,
-    loadout: { stats: { str: 3, vit: 3, luk: 1 }, potions: 1, rations: 4, weapon: null, armor: null },
+    loadout: { level: 1, stats: { str: 3, vit: 3, luk: 1 }, potions: 1, rations: 4, weapon: null, armor: null },
     maps: [],
     potionThreshold: 30,
   }),

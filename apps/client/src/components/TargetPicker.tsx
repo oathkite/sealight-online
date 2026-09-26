@@ -37,7 +37,7 @@ const useEstimate = (character: CharacterState, target: number, rations: number,
     () =>
       estimateExpedition({
         target,
-        loadout: { stats: character.stats, potions, rations, weapon: character.equipment.weapon, armor: character.equipment.armor },
+        loadout: { level: character.level, stats: character.stats, potions, rations, weapon: character.equipment.weapon, armor: character.equipment.armor },
         maps: character.maps,
         potionThreshold: character.tactics.potionThreshold,
       }),

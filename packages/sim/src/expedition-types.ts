@@ -27,6 +27,8 @@ export const PACE = {
 export type MapKnowledge = readonly (readonly number[])[];
 
 export type ExpeditionLoadout = {
+  /** 送り出したときのレベル。格下の階でもらえる経験値が減る */
+  readonly level: number;
   readonly stats: Stats;
   readonly potions: number;
   readonly rations: number;

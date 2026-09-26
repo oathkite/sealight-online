@@ -10,6 +10,7 @@ import {
   type MapKnowledge,
 } from "./expedition-types";
 import { affixesOf, attackFor, defenseFor, maxHpFor } from "./fighter";
+import { scaledXp } from "./growth";
 import type { Equipment } from "./items";
 import { rollDrop, rollLoot } from "./loot";
 import type { Rng } from "./rng";
@@ -103,7 +104,8 @@ const lootContext = (s: JourneyState, depth: number, rareBonus = 0) => ({
   rareBonus,
 });
 
-const battle = (s: JourneyState, depth: number, foe: Foe): void => {
+const battle = (s: JourneyState, depth: number, found: Foe): void => {
+  const foe = { ...found, xp: scaledXp(found.xp, s.input.loadout.level, depth) };
   const view = { kind: foe.kind, name: foe.name, hp: foe.hp, traits: foe.traits, rare: foe.rare };
   s.events.push({ type: "encounter", t: s.t, depth, foe: view, hp: s.me.hp });
   const outcome = resolveBattle(s.rng, s.me, foe, s.input.potionThreshold);

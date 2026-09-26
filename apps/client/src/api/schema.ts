@@ -52,6 +52,7 @@ const expeditionResult = z.object({
     seed: z.number(),
     target: z.number(),
     loadout: z.object({
+      level: z.number(),
       stats,
       potions: z.number(),
       rations: z.number(),
@@ -92,7 +93,7 @@ const phase = z.discriminatedUnion("type", [
 ]);
 
 export const characterSchema: z.ZodType<CharacterState> = z.object({
-  version: z.literal(5),
+  version: z.literal(6),
   level: z.number(),
   xp: z.number(),
   unspentPoints: z.number(),

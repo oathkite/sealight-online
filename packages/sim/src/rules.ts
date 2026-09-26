@@ -52,6 +52,7 @@ const toRealMs = (sec: number, timeScale: number): number => Math.round((sec * 1
 const expeditionInput = (state: CharacterState, target: number, rations: number, potions: number): Omit<ExpeditionInput, "seed"> => ({
   target,
   loadout: {
+    level: state.level,
     stats: state.stats,
     potions,
     rations,

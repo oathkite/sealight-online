@@ -38,6 +38,7 @@ export {
 } from "./expedition-types";
 export { simulateExpedition } from "./expedition";
 export { buildAdvice, type Advice } from "./advice";
+export { expectedLevel, xpScale } from "./growth";
 export { estimateExpedition, reactionFor, type Estimate, type Reaction } from "./estimate";
 export {
   buildJournal,

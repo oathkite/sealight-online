@@ -91,7 +91,7 @@ describe("TargetPicker", () => {
 
 describe("TargetPicker の初期値", () => {
   const lastExpeditionOf = (status: "returned" | "fainted", target: number, reached: number) => ({
-    input: { seed: 1, target, loadout: { stats: createCharacter().stats, potions: 0, rations: 0, weapon: null, armor: null }, maps: [], potionThreshold: 30 },
+    input: { seed: 1, target, loadout: { level: 1, stats: createCharacter().stats, potions: 0, rations: 0, weapon: null, armor: null }, maps: [], potionThreshold: 30 },
     events: [],
     outcome: { status, reached, hp: 0, maxHp: 32, potions: 0, rations: 0, xp: 0, gold: 0, items: [], durationSec: 1, maps: [] },
   });
@@ -112,7 +112,7 @@ describe("TargetPicker の初期値", () => {
   it("倒れたら、倒れた階の 1 つ上を初期値にする", () => {
     const character = createCharacter();
     const lastExpedition = {
-      input: { seed: 1, target: 10, loadout: { stats: character.stats, potions: 0, rations: 0, weapon: null, armor: null }, maps: [], potionThreshold: 30 },
+      input: { seed: 1, target: 10, loadout: { level: 1, stats: character.stats, potions: 0, rations: 0, weapon: null, armor: null }, maps: [], potionThreshold: 30 },
       events: [],
       outcome: { status: "fainted", reached: 6, hp: 0, maxHp: 32, potions: 0, rations: 0, xp: 0, gold: 0, items: [], durationSec: 1, maps: [] },
     } as const;

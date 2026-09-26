@@ -12,7 +12,7 @@ const resultOf = (events: readonly ExpeditionEvent[], status: "returned" | "fain
   input: {
     seed: 1,
     target: 2,
-    loadout: { stats: { str: 3, vit: 3, luk: 0 }, potions: 0, rations: 4, weapon: null, armor: null },
+    loadout: { level: 1, stats: { str: 3, vit: 3, luk: 0 }, potions: 0, rations: 4, weapon: null, armor: null },
     maps: [],
     potionThreshold: 30,
   },

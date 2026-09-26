@@ -3,7 +3,7 @@ import { estimateExpedition, reactionFor } from "./estimate";
 
 const base = {
   target: 2,
-  loadout: { stats: { str: 30, vit: 30, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null },
+  loadout: { level: 1, stats: { str: 30, vit: 30, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null },
   maps: [],
   potionThreshold: 30,
 } as const;

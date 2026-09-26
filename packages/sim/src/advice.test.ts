@@ -19,7 +19,7 @@ const resultOf = (events: readonly ExpeditionEvent[], options: Options = {}): Ex
   input: {
     seed: 1,
     target: 12,
-    loadout: { stats: { str: 5, vit: 5, luk: 0 }, potions: options.potions ?? 2, rations: 4, weapon: null, armor: options.armor ?? null },
+    loadout: { level: 10, stats: { str: 5, vit: 5, luk: 0 }, potions: options.potions ?? 2, rations: 4, weapon: null, armor: options.armor ?? null },
     maps: [],
     potionThreshold: 30,
   },

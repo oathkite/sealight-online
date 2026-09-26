@@ -4,8 +4,8 @@ import { PACE, type ExpeditionInput, type ExpeditionLoadout, type LootSource } f
 import { generateFloor } from "./floor";
 import { toIndex } from "./path";
 
-const strong: ExpeditionLoadout = { stats: { str: 30, vit: 30, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null };
-const weak: ExpeditionLoadout = { stats: { str: 0, vit: 0, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null };
+const strong: ExpeditionLoadout = { level: 1, stats: { str: 30, vit: 30, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null };
+const weak: ExpeditionLoadout = { level: 1, stats: { str: 0, vit: 0, luk: 0 }, potions: 0, rations: 11, weapon: null, armor: null };
 
 const input = (overrides: Partial<ExpeditionInput> = {}): ExpeditionInput => ({
   seed: 1234,
@@ -122,6 +122,15 @@ describe("simulateExpedition", () => {
     expect(found).toBeGreaterThan(0);
     expect(events.filter((e) => e.type === "bagFull")).toHaveLength(found);
     expect(outcome.items).toEqual([]);
+  });
+
+  it("レベルが階に見合う以上に高いと、同じ冒険でももらえる経験値が減る", () => {
+    const low = simulateExpedition(input({ target: 3 }));
+    const high = simulateExpedition(input({ target: 3, loadout: { ...strong, level: 40 } }));
+    expect(high.outcome.xp).toBeGreaterThan(0);
+    expect(high.outcome.xp).toBeLessThan(low.outcome.xp);
+    const victories = high.events.flatMap((e) => (e.type === "victory" ? [e.xp] : []));
+    expect(victories.reduce((sum, xp) => sum + xp, 0)).toBe(high.outcome.xp);
   });
 
   it("持ち帰る装備の ID は一意", () => {
