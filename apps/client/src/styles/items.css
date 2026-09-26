@@ -158,3 +158,47 @@
   height: 6px;
   animation-delay: 1.2s;
 }
+
+/* 特性の札。効く相手ごとに色を変える */
+.affix {
+  padding: 0 7px;
+  border-radius: 6px;
+  background: rgb(230 180 90 / 0.18);
+  box-shadow: 0 0 0 1px rgb(230 180 90 / 0.45) inset;
+  color: var(--gold-200);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: none;
+}
+
+.affix.pierce {
+  background: rgb(127 226 255 / 0.14);
+  box-shadow: 0 0 0 1px rgb(127 226 255 / 0.5) inset;
+  color: var(--arcane-200);
+}
+
+.affix.sweep {
+  background: rgb(155 212 110 / 0.14);
+  box-shadow: 0 0 0 1px rgb(155 212 110 / 0.5) inset;
+  color: #d8f2c2;
+}
+
+.affix.guard {
+  background: rgb(242 154 79 / 0.16);
+  box-shadow: 0 0 0 1px rgb(242 154 79 / 0.55) inset;
+  color: #ffd9b5;
+}
+
+.affix.evade {
+  background: rgb(190 150 255 / 0.15);
+  box-shadow: 0 0 0 1px rgb(190 150 255 / 0.5) inset;
+  color: #e6d9ff;
+}
+
+.affix-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}

@@ -4,7 +4,7 @@ import { buildJournal, heartsOf, moodOf } from "./journal";
 
 const slime = { kind: "slime", name: "スライム", hp: 8, traits: [], rare: false } as const;
 const glow = { kind: "glowSlime", name: "光るスライム", hp: 10, traits: [], rare: true } as const;
-const sword = { id: "a", slot: "weapon", name: "灯火の剣", rarity: "rare", power: 9, value: 135 } as const;
+const sword = { id: "a", slot: "weapon", name: "灯火の剣", rarity: "rare", power: 9, value: 135, affix: null } as const;
 
 const events: readonly ExpeditionEvent[] = [
   { type: "floor", t: 0, depth: 1, direction: "down", hp: 40, rations: 4 },

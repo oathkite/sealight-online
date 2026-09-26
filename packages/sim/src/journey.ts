@@ -9,7 +9,7 @@ import {
   type LootSource,
   type MapKnowledge,
 } from "./expedition-types";
-import { attackFor, defenseFor, maxHpFor } from "./fighter";
+import { affixesOf, attackFor, defenseFor, maxHpFor } from "./fighter";
 import type { Equipment } from "./items";
 import { rollDrop, rollLoot } from "./loot";
 import type { Rng } from "./rng";
@@ -43,7 +43,14 @@ const initialState = (input: ExpeditionInput, rng: Rng): JourneyState => {
     events: [],
     items: [],
     sources: new Map(),
-    me: { hp: maxHp, maxHp, attack: attackFor(stats, weapon), defense: defenseFor(stats, armor), potions },
+    me: {
+      hp: maxHp,
+      maxHp,
+      attack: attackFor(stats, weapon),
+      defense: defenseFor(stats, armor),
+      potions,
+      affixes: affixesOf(weapon, armor),
+    },
     t: 0,
     xp: 0,
     gold: 0,

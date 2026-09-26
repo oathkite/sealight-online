@@ -1,7 +1,22 @@
-import type { Equipment, LootSource, Margin, Reaction, Trait } from "@sealight/sim";
+import type { Affix, Equipment, LootSource, Margin, Reaction, Trait } from "@sealight/sim";
+
+export const AFFIX_NAMES = {
+  pierce: "貫き",
+  sweep: "薙ぎ払い",
+  guard: "受け止め",
+  evade: "身かわし",
+} as const satisfies Record<Affix, string>;
+
+/** 特性が何に効くか。装備の札と報告の手がかりで使う */
+export const AFFIX_HINTS = {
+  pierce: "硬い敵の守りを貫く",
+  sweep: "群れの敵に 2 倍のダメージ",
+  guard: "強打の敵のダメージを半分に",
+  evade: "素早い敵の 2 回目の攻撃をかわす",
+} as const satisfies Record<Affix, string>;
 
 export const itemLabel = (item: Equipment): string =>
-  `${item.rarity === "rare" ? "★" : ""}${item.name}（${item.slot === "weapon" ? "攻" : "防"}+${item.power}）`;
+  `${item.rarity === "rare" ? "★" : ""}${item.name}${item.affix ? `［${AFFIX_NAMES[item.affix]}］` : ""}（${item.slot === "weapon" ? "攻" : "防"}+${item.power}）`;
 
 export const STAT_LABELS = { str: "力", vit: "体", luk: "運" } as const;
 

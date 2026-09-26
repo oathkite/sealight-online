@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Equipment } from "@sealight/sim";
+import { AFFIX_HINTS, AFFIX_NAMES } from "../format";
 import { ItemIcon } from "./ItemIcon";
 import { statName } from "./items";
 
@@ -35,11 +36,13 @@ export const ItemCard = ({ item, gain = null, order, children }: ItemCardProps) 
         <span className="item-name">
           {item.rarity === "rare" ? <span className="rarity">レア</span> : null}
           {item.name}
+          {item.affix ? <span className={`affix ${item.affix}`}>{AFFIX_NAMES[item.affix]}</span> : null}
         </span>
         <span className="item-stat">
           {statName(item.slot)} +{item.power}
           {gain === null ? null : <GainBadge gain={gain} slot={item.slot} />}
         </span>
+        {item.affix ? <span className="affix-hint">{AFFIX_HINTS[item.affix]}</span> : null}
       </div>
       {children ? <div className="item-actions">{children}</div> : null}
     </div>

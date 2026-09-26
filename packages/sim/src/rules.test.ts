@@ -27,7 +27,7 @@ const depart = (state: CharacterState, target: number, rations: number): Departu
   return result.value;
 };
 
-const sword: Equipment = { id: "s1", slot: "weapon", name: "鉄の剣", rarity: "common", power: 4, value: 30 };
+const sword: Equipment = { id: "s1", slot: "weapon", name: "鉄の剣", rarity: "common", power: 4, value: 30, affix: null };
 const strong = (): CharacterState => ({ ...createCharacter(), stats: { str: 30, vit: 30, luk: 5 } });
 const weak = (): CharacterState => ({ ...createCharacter(), stats: { str: 0, vit: 0, luk: 0 }, potions: 0 });
 
@@ -189,7 +189,7 @@ describe("街での行動", () => {
     for (const quantity of [0, -1, 1.5, 100]) {
       expect(buy(rich, "ration", "r", quantity)).toEqual({ ok: false, error: "invalid_quantity" });
     }
-    expect(buy(rich, "iron-sword", "i", 2)).toEqual({ ok: false, error: "invalid_quantity" });
+    expect(buy(rich, "pierce-sword", "i", 2)).toEqual({ ok: false, error: "invalid_quantity" });
   });
 
   it("まとめ買いの代金が足りなければ、1 つも買わない", () => {

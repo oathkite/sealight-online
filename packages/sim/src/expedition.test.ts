@@ -91,7 +91,7 @@ describe("simulateExpedition", () => {
 
   it("荷物がいっぱいのときに拾った装備は置いてくる", () => {
     const full = { ...strong, rations: 12, stats: { ...strong.stats, luk: 30 } };
-    const result = simulateExpedition(input({ target: 5, loadout: full }));
+    const result = simulateExpedition(input({ target: 8, loadout: full }));
     const dropped = result.events.filter((e) => e.type === "bagFull");
     expect(dropped.length).toBeGreaterThan(0);
   });

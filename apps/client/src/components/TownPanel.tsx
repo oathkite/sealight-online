@@ -37,7 +37,7 @@ export const TownPanel = ({ character, busy, actions }: TownPanelProps) => (
       />
       <div>
         <TacticsForm tactics={character.tactics} busy={busy} onChange={actions.setTactics} />
-        <Shop gold={character.gold} busy={busy} onBuy={actions.buy} />
+        <Shop gold={character.gold} clearedDepth={character.clearedDepth} busy={busy} onBuy={actions.buy} />
       </div>
     </div>
   </section>

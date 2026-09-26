@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { foeAt } from "./catalog";
+import { AFFIXES } from "./items";
 import { rollDrop, rollLoot } from "./loot";
 import { createRng } from "./rng";
 
@@ -47,6 +48,26 @@ describe("rollLoot", () => {
       ).length;
     };
     expect(count(0.5)).toBeGreaterThan(count(0));
+  });
+});
+
+describe("装備の特性", () => {
+  const items = roll(5, 10, 0, 600).flatMap((l) => (l.type === "item" ? [l.item] : []));
+
+  it("一部の装備に、部位に合った特性が付く", () => {
+    const withAffix = items.filter((i) => i.affix !== null);
+    expect(withAffix.length).toBeGreaterThan(items.length * 0.2);
+    expect(withAffix.length).toBeLessThan(items.length * 0.5);
+    for (const i of withAffix) expect((AFFIXES[i.slot] as readonly string[]).includes(i.affix ?? "")).toBe(true);
+  });
+
+  it("特性付きは、同じ深さ・同じ珍しさの特性なしより強さが控えめで、売値は高い", () => {
+    const avg = (xs: readonly number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+    const common = items.filter((i) => i.rarity === "common");
+    const plain = common.filter((i) => i.affix === null);
+    const special = common.filter((i) => i.affix !== null);
+    expect(avg(special.map((i) => i.power))).toBeLessThan(avg(plain.map((i) => i.power)));
+    expect(avg(special.map((i) => i.value / i.power))).toBeGreaterThan(avg(plain.map((i) => i.value / i.power)));
   });
 });
 

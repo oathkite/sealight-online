@@ -4,7 +4,7 @@ import { maxHpFor, type Stats } from "./fighter";
 import type { Equipment } from "./items";
 
 /** 保存形式の版。形を変えたら上げ、古い版のキャラは作り直す */
-export const STATE_VERSION = 3;
+export const STATE_VERSION = 4;
 
 export type Tactics = {
   /** HP がこの割合（%）を下回ったらポーションを飲む。0 なら飲まない */
@@ -57,6 +57,7 @@ const STARTER_WEAPON: Equipment = {
   rarity: "common",
   power: 1,
   value: 1,
+  affix: null,
 };
 
 export const maxHpOf = (state: Pick<CharacterState, "stats">): number => maxHpFor(state.stats);

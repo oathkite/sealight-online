@@ -16,7 +16,10 @@ const setup = (overrides: Partial<CharacterState> = {}) => {
   };
   const character: CharacterState = {
     ...createCharacter(),
-    stash: [{ id: "st1", slot: "armor", name: "革の胸当て", rarity: "common", power: 2, value: 10 }],
+    stash: [
+      { id: "st1", slot: "armor", name: "革の胸当て", rarity: "common", power: 2, value: 10, affix: null },
+      { id: "st2", slot: "armor", name: "木の盾", rarity: "common", power: 1, value: 8, affix: "guard" },
+    ],
     ...overrides,
   };
   render(<TownPanel character={character} busy={false} actions={actions} />);
@@ -59,7 +62,24 @@ describe("TownPanel", () => {
     expect(actions.buy).toHaveBeenCalledWith("ration", 1);
     expect(actions.buy).toHaveBeenCalledWith("ration", 5);
     expect(screen.getByRole("button", { name: "保存食を 10 個買う" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /鋼の剣/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /樫の大盾/ })).toBeDisabled();
+  });
+
+  it("特性付きの装備には、特性と効く敵が書いてある", () => {
+    setup();
+    const row = screen.getByText(/木の盾/).closest("li");
+    if (!row) throw new Error("倉庫の行が見つかりません");
+    expect(within(row).getByText("受け止め")).toBeInTheDocument();
+    expect(within(row).getByText(/強打の敵/)).toBeInTheDocument();
+  });
+
+  it("店の装備は特性付きで、無事に帰った階が深いほど強い物が並ぶ", async () => {
+    const { actions, user } = setup({ gold: 10_000, clearedDepth: 10 });
+    const shield = screen.getByRole("button", { name: /樫の大盾/ });
+    expect(within(shield).getByText("受け止め")).toBeInTheDocument();
+    expect(shield).toHaveTextContent(/防\+8/);
+    await user.click(shield);
+    expect(actions.buy).toHaveBeenCalledWith("guard-shield", 1);
   });
 
   it("ポーションを飲む HP を変えられる", async () => {

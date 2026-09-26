@@ -8,6 +8,7 @@ const hero = (overrides: Partial<Combatant> = {}): Combatant => ({
   attack: 6,
   defense: 1,
   potions: 0,
+  affixes: [],
   ...overrides,
 });
 
@@ -76,5 +77,42 @@ describe("素早い敵", () => {
     const outcome = resolveBattle(createRng(7), hero({ hp: 100, maxHp: 100 }), fast, 0);
     const firstRound = outcome.events.slice(0, 3).map((e) => (e.type === "attack" ? e.by : e.type));
     expect(firstRound).toEqual(["player", "foe", "foe"]);
+  });
+});
+
+/** 最初の 1 ラウンドの、こちらの攻撃とあちらの攻撃 */
+const firstRound = (me: Combatant, foe: Foe) => {
+  const { events } = resolveBattle(createRng(3), me, foe, 0);
+  const mine = events.find((e) => e.type === "attack" && e.by === "player");
+  const firstFoe = events.findIndex((e) => e.type === "attack" && e.by === "foe");
+  const nextMine = events.findIndex((e, i) => i > firstFoe && e.type === "attack" && e.by === "player");
+  const theirs = events.slice(firstFoe, nextMine === -1 ? undefined : nextMine).filter((e) => e.type === "attack" && e.by === "foe");
+  return { mine: mine?.type === "attack" ? mine.damage : 0, theirs: theirs.map((e) => (e.type === "attack" ? e.damage : 0)) };
+};
+
+describe("装備の特性", () => {
+  const brute = (traits: Foe["traits"], overrides: Partial<Foe> = {}): Foe => ({ ...slime, hp: 999, attack: 20, defense: 0, traits, ...overrides });
+
+  it("貫き：硬い敵の防御をほとんど無視する", () => {
+    const shell = brute(["armored"], { defense: 10 });
+    expect(firstRound(hero({ attack: 12 }), shell).mine).toBeLessThanOrEqual(3);
+    expect(firstRound(hero({ attack: 12, affixes: ["pierce"] }), shell).mine).toBeGreaterThanOrEqual(9);
+  });
+
+  it("薙ぎ払い：群れの敵に 2 倍のダメージ。群れでない敵には効かない", () => {
+    expect(firstRound(hero({ attack: 6 }), brute(["swarm"])).mine).toBeLessThanOrEqual(7);
+    expect(firstRound(hero({ attack: 6, affixes: ["sweep"] }), brute(["swarm"])).mine).toBeGreaterThanOrEqual(10);
+    expect(firstRound(hero({ attack: 6, affixes: ["sweep"] }), brute([])).mine).toBeLessThanOrEqual(7);
+  });
+
+  it("受け止め：強打の敵から受けるダメージを半分にする。強打でない敵には効かない", () => {
+    expect(firstRound(hero({ hp: 99, maxHp: 99, defense: 0 }), brute(["heavy"])).theirs[0]).toBeGreaterThanOrEqual(19);
+    expect(firstRound(hero({ hp: 99, maxHp: 99, defense: 0, affixes: ["guard"] }), brute(["heavy"])).theirs[0]).toBeLessThanOrEqual(11);
+    expect(firstRound(hero({ hp: 99, maxHp: 99, defense: 0, affixes: ["guard"] }), brute([])).theirs[0]).toBeGreaterThanOrEqual(19);
+  });
+
+  it("身かわし：素早い敵の 2 回目の攻撃をかわす", () => {
+    expect(firstRound(hero({ hp: 99, maxHp: 99 }), brute(["fast"])).theirs).toHaveLength(2);
+    expect(firstRound(hero({ hp: 99, maxHp: 99, affixes: ["evade"] }), brute(["fast"])).theirs).toHaveLength(1);
   });
 });

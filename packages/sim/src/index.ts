@@ -5,8 +5,21 @@ export { generateMaze, isFloor, type MazeOptions } from "./maze";
 export { findPath, toIndex } from "./path";
 export { FLOOR_SIZE, generateFloor, MAX_DEPTH, type Floor } from "./floor";
 export { bandOf, floorConfig, foeAt, spawnFoe, type FloorConfig, type Foe, type FoeKind, type Trait } from "./catalog";
-export { isShopSku, SHOP, type Equipment, type Loot, type Rarity, type ShopSku, type Slot } from "./items";
-export { attackFor, defenseFor, maxHpFor, STAT_KEYS, type StatKey, type Stats } from "./fighter";
+export {
+  AFFIX_COUNTERS,
+  AFFIXES,
+  isShopSku,
+  SHOP,
+  shopOffer,
+  type Affix,
+  type Equipment,
+  type Loot,
+  type Rarity,
+  type ShopOffer,
+  type ShopSku,
+  type Slot,
+} from "./items";
+export { affixesOf, attackFor, defenseFor, maxHpFor, STAT_KEYS, type StatKey, type Stats } from "./fighter";
 export type { BattleEvent } from "./combat";
 export {
   PACE,

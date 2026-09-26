@@ -6,7 +6,7 @@ import { Journal } from "./Journal";
 
 const slime = { kind: "slime", name: "スライム", hp: 8, traits: [], rare: false } as const;
 const glow = { kind: "glowSlime", name: "光るスライム", hp: 10, traits: [], rare: true } as const;
-const sword = { id: "a", slot: "weapon", name: "灯火の剣", rarity: "rare", power: 9, value: 135 } as const;
+const sword = { id: "a", slot: "weapon", name: "灯火の剣", rarity: "rare", power: 9, value: 135, affix: null } as const;
 
 const resultOf = (events: readonly ExpeditionEvent[], status: "returned" | "fainted", reached: number): ExpeditionResult => ({
   input: {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { stow } from "./bag";
 import type { Equipment } from "./items";
 
-const item = (id: string, value: number): Equipment => ({ id, slot: "weapon", name: "短剣", rarity: "common", power: value / 5, value });
+const item = (id: string, value: number): Equipment => ({ id, slot: "weapon", name: "短剣", rarity: "common", power: value / 5, value, affix: null });
 
 describe("stow", () => {
   it("空きがあれば入れて、何も置いてこない", () => {

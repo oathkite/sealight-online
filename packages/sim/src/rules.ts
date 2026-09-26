@@ -4,7 +4,7 @@ import { simulateExpedition } from "./expedition";
 import { PACE, type ExpeditionInput, type ExpeditionResult } from "./expedition-types";
 import type { StatKey } from "./fighter";
 import { MAX_DEPTH } from "./floor";
-import { SHOP, type ShopSku, type Slot } from "./items";
+import { SHOP, shopOffer, type ShopSku, type Slot } from "./items";
 import { failure, success, type Result } from "./result";
 
 export type RuleError =
@@ -168,22 +168,14 @@ const isValidQuantity = (quantity: number, isEquipment: boolean): boolean =>
  * 装備を買うときは、呼び出し側が一意な ID を渡す
  */
 export const buy = (state: CharacterState, sku: ShopSku, newItemId: string, quantity = 1): RuleResult => {
-  const product = SHOP[sku];
-  if (!isValidQuantity(quantity, product.type === "equipment")) return failure("invalid_quantity");
-  const cost = product.price * quantity;
+  const { price, item } = shopOffer(sku, state.clearedDepth);
+  if (!isValidQuantity(quantity, item !== null)) return failure("invalid_quantity");
+  const cost = price * quantity;
   if (state.gold < cost) return failure("not_enough_gold");
   const paid = { ...state, gold: state.gold - cost };
-  if (product.type === "potion") return success({ ...paid, potions: paid.potions + quantity });
-  if (product.type === "ration") return success({ ...paid, rations: paid.rations + quantity });
-  const item = {
-    id: newItemId,
-    slot: product.slot,
-    name: product.name,
-    rarity: "common",
-    power: product.power,
-    value: Math.floor(product.price / 2),
-  } as const;
-  return success({ ...paid, stash: [...paid.stash, item] });
+  if (item) return success({ ...paid, stash: [...paid.stash, { ...item, id: newItemId }] });
+  if (SHOP[sku].type === "potion") return success({ ...paid, potions: paid.potions + quantity });
+  return success({ ...paid, rations: paid.rations + quantity });
 };
 
 export { maxHpOf };

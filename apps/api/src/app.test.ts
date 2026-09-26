@@ -139,7 +139,7 @@ describe("街での行動", () => {
     expect((await c.call("POST", "/me/buy", { sku: "ration" })).json.rations).toBe(9);
     expect((await c.call("POST", "/me/buy", { sku: "potion" })).json.potions).toBe(3);
     expect((await c.call("POST", "/me/buy", { sku: "dragon" })).status).toBe(400);
-    const expensive = await c.call("POST", "/me/buy", { sku: "steel-sword" });
+    const expensive = await c.call("POST", "/me/buy", { sku: "guard-shield" });
     expect(expensive.status).toBe(409);
     expect(expensive.json.error).toBe("not_enough_gold");
   });
@@ -152,7 +152,7 @@ describe("街での行動", () => {
     expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: 0 })).status).toBe(400);
     expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: 100 })).status).toBe(400);
     expect((await c.call("POST", "/me/buy", { sku: "ration", quantity: "5" })).status).toBe(400);
-    const two = await c.call("POST", "/me/buy", { sku: "iron-sword", quantity: 2 });
+    const two = await c.call("POST", "/me/buy", { sku: "pierce-sword", quantity: 2 });
     expect(two.status).toBe(409);
     expect(two.json.error).toBe("invalid_quantity");
   });
@@ -161,7 +161,8 @@ describe("街での行動", () => {
     const c = client();
     await c.call("GET", "/me");
     await patchState(c, { gold: 500 });
-    const item = (await c.call("POST", "/me/buy", { sku: "iron-sword" })).json.stash.at(-1);
+    const item = (await c.call("POST", "/me/buy", { sku: "pierce-sword" })).json.stash.at(-1);
+    expect(item?.affix).toBe("pierce");
     const equipped = (await c.call("POST", "/me/equip", { itemId: item?.id })).json;
     expect(equipped.equipment.weapon?.id).toBe(item?.id);
   });
