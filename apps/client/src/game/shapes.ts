@@ -11,6 +11,7 @@ import {
   type Rotation,
   type Vec3,
 } from "@sealight/engine";
+import { patternOf } from "./materials";
 import { color, type ColorName } from "./palette";
 
 export type Material = (typeof MATERIAL)[keyof typeof MATERIAL];
@@ -20,6 +21,10 @@ export type ShapeOptions = {
   readonly round?: number;
   readonly material?: Material;
   readonly rotation?: Rotation;
+  /** 模様の番号。省くと色から決める */
+  readonly pattern?: number;
+  /** 風で揺れる重み（形の下端, 上端） */
+  readonly sway?: readonly [number, number];
 };
 
 /** 置き物の中の座標系。origin を中心に、上下軸まわりに heading だけ回した向き */
@@ -42,6 +47,8 @@ export const shapesFor = (builder: MeshBuilder, frame: Frame = WORLD) => {
     color: color(name),
     material: options.material ?? MATERIAL.standard,
     rotation: orient(options.rotation),
+    pattern: options.pattern ?? patternOf(name),
+    sway: options.sway ?? ([0, 0] as const),
     size,
   });
 

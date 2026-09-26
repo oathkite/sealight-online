@@ -100,6 +100,12 @@ export type EnvironmentInput = {
   readonly waiting: boolean;
 };
 
+/** 風。西から吹き、強さはゆっくり波打つ。夜（灯りがともる頃）は穏やかになる */
+const windAt = (time: number, lamp: number): Environment["wind"] => {
+  const direction = normalize([0.85, 0, 0.35]);
+  return { direction: [direction[0], direction[2]], strength: (0.5 + 0.18 * Math.sin(time * 0.05) + 0.08 * Math.sin(time * 0.13)) * (1 - lamp * 0.45), gust: 0.7 };
+};
+
 const flicker = (time: number): number => 0.85 + 0.15 * Math.sin(time * 11.3) * Math.sin(time * 5.7 + 1.3);
 
 const lightFor = (anchor: LightAnchor, lamp: number, lantern: number, flame: number, magic: number): PointLight | null => {
@@ -130,6 +136,7 @@ export const environmentAt = ({ hour, time, anchors, waiting }: EnvironmentInput
     fog: { near: 6, far: 20 },
     curve: 0.016,
     vignette: 0.35,
+    wind: windAt(time, sky.lamp),
     lights: anchors.flatMap((a) => lightFor(a, sky.lamp, lantern, flame * (0.5 + sky.lamp * 0.5), magic) ?? []).slice(0, 4),
   };
 };

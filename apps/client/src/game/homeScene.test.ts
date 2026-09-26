@@ -47,6 +47,12 @@ describe("createHomeScene", () => {
     expect(input.models[0]?.pose.get("bandage")?.visible).toBe(true);
   });
 
+  it("門の垂れ幕と旗竿の旗、2 枚の布を描く", () => {
+    const { input } = scene.frame(info, state());
+    expect(input.cloths).toHaveLength(2);
+    expect(input.cloths.every((c) => c.pattern > 0)).toBe(true);
+  });
+
   it("煙と魔法の光の粒を描く", () => {
     const { input } = scene.frame(info, state());
     expect(input.particles.length).toBeGreaterThanOrEqual(2);

@@ -12,18 +12,19 @@ import {
   type Water,
 } from "@sealight/engine";
 import { BOUNDS, HOME, PATHS, placementOf, ROUTE_TILES, type PropKind } from "./layout";
+import { patternOf } from "./materials";
 import { color } from "./palette";
 import { buildHouse } from "./props/house";
 import { buildGate } from "./props/gate";
 import { buildBush, buildFlower, buildMushrooms, buildOak, buildPine, buildPondEdge, buildRock } from "./props/nature";
-import type { LightAnchor, PropBuilder } from "./props/types";
-import { buildBarrels, buildBed, buildBowl, buildCrates, buildGarden, buildLantern, buildSignpost, buildStump, buildWell, buildWoodpile } from "./props/yard";
+import type { ClothAnchor, LightAnchor, PropBuilder } from "./props/types";
+import { buildBarrels, buildBed, buildBowl, buildCrates, buildFlagpole, buildGarden, buildLantern, buildSignpost, buildStump, buildWell, buildWoodpile } from "./props/yard";
 import { shapesFor } from "./shapes";
 
 const BUILDERS: Readonly<Record<PropKind, PropBuilder>> = {
   house: buildHouse, garden: buildGarden, woodpile: buildWoodpile, barrels: buildBarrels, well: buildWell, crates: buildCrates,
   lantern: buildLantern, bed: buildBed, bowl: buildBowl, gate: buildGate, pond: buildPondEdge, signpost: buildSignpost,
-  stump: buildStump, oak: (s) => buildOak(s), pine: (s) => buildPine(s), bush: buildBush, rock: buildRock, mushrooms: buildMushrooms,
+  stump: buildStump, flagpole: buildFlagpole, oak: (s) => buildOak(s), pine: (s) => buildPine(s), bush: buildBush, rock: buildRock, mushrooms: buildMushrooms,
 };
 
 const pond = placementOf("pond");
@@ -85,12 +86,13 @@ export type HomeWorld = {
   readonly waters: readonly Water[];
   readonly lights: readonly LightAnchor[];
   readonly smoke: Vec3 | null;
+  readonly cloths: readonly ClothAnchor[];
 };
 
 /** 家の場面の動かない物をすべて作り、1 つのメッシュにまとめる */
 export const buildHomeWorld = (): HomeWorld => {
   const builder = createMeshBuilder();
-  builder.heightfield({ min: [-44, -40], max: [43, 30], segments: 190, height: groundHeight, color: color("grass"), material: MATERIAL.terrain });
+  builder.heightfield({ min: [-44, -40], max: [43, 30], segments: 190, height: groundHeight, color: color("grass"), material: MATERIAL.terrain, pattern: patternOf("grass") });
   builder.disc({ center: [POND_WATER.center[0], WATER_LEVEL, POND_WATER.center[1]], radius: [POND_WATER.radius[0] * 1.12, POND_WATER.radius[1] * 1.12], segments: 48, color: color("bowl_water"), material: MATERIAL.water });
   const anchors = HOME.map((p) => BUILDERS[p.kind](shapesFor(builder, { origin: centerOf(p), heading: headingOf(p.turn) })));
   forest(builder);
@@ -101,5 +103,6 @@ export const buildHomeWorld = (): HomeWorld => {
     waters: [POND_WATER],
     lights: anchors.flatMap((a) => a.lights ?? []),
     smoke: anchors.find((a) => a.smoke)?.smoke ?? null,
+    cloths: anchors.flatMap((a) => a.cloths ?? []),
   };
 };

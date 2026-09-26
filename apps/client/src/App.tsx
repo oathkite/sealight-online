@@ -5,15 +5,15 @@ import { loadCharacterId } from "@/character/characterId";
 import { useCharacter } from "@/character/useCharacter";
 import { useSeenReport } from "@/character/useSeenReport";
 import { HomeView } from "@/game/HomeView";
+import { loadGraphicsSetting } from "@/game/graphics";
 import { skyAt } from "@/game/lighting";
 import { useClockHour } from "@/game/useClockHour";
 import { useStage } from "@/scene/useStage";
 import { GamePanel } from "@/screens/GamePanel";
 import { usePanelActions } from "@/screens/usePanelActions";
 
-const params = new URLSearchParams(window.location.search);
-/** ?quality=low（または以前の ?shadows=0）で、影を粗くして軽くする */
-const QUALITY = params.get("quality") === "low" || params.get("shadows") === "0" ? "low" : "high";
+/** 画質の設定（URL の ?quality= か、保存した設定。なければ自動） */
+const GRAPHICS = loadGraphicsSetting();
 
 export const App = () => {
   const api = useMemo(() => createCharacterApi(loadCharacterId()), []);
@@ -38,7 +38,7 @@ export const App = () => {
   return (
     <main className="app">
       <CrayonFilter />
-      <HomeView stage={stage} mood={mood} hour={hour} quality={QUALITY} onStats={(stats) => setFps(stats.fps)} />
+      <HomeView stage={stage} mood={mood} hour={hour} quality={GRAPHICS} onStats={(stats) => setFps(stats.fps)} />
       <div className="hud-fps">{fps} fps</div>
       <div className="overlay">
         {error ? <p className="error">エラー：{error}</p> : null}

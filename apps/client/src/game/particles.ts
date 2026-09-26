@@ -33,7 +33,7 @@ const firefliesAt = (time: number, lamp: number): ParticleSet =>
       const z = Math.cos(seed * 1.7) * 4.5 + Math.cos(time * 0.17 + i * 2) * 0.8;
       const y = 0.5 + ((i * 7) % 5) * 0.2 + Math.sin(time * 0.9 + i) * 0.25;
       const blink = Math.max(0, Math.sin(time * 1.6 + i * 1.3));
-      return [x, y, z, 0.045, 0.85, 1.0, 0.5, blink * lamp];
+      return [x, y, z, 0.09, 0.85, 1.0, 0.5, blink * lamp];
     }),
     "additive",
   );
@@ -44,7 +44,7 @@ const motesAt = (gate: Vec3, time: number): ParticleSet =>
     Array.from({ length: MOTES }, (_, i): Particle => {
       const t = (((time / 3.5 + i / MOTES) % 1) + 1) % 1;
       const a = i * 2.4;
-      return [gate[0] + Math.cos(a) * 0.35, gate[1] + t * 1.6, gate[2] + Math.sin(a) * 0.3, 0.035 + (1 - t) * 0.02, 0.5, 0.9, 1.0, Math.sin(t * Math.PI) * 0.9];
+      return [gate[0] + Math.cos(a) * 0.35, gate[1] + t * 1.6, gate[2] + Math.sin(a) * 0.3, 0.07 + (1 - t) * 0.03, 0.5, 0.9, 1.0, Math.sin(t * Math.PI) * 0.9];
     }),
     "additive",
   );

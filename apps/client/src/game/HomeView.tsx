@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { createEngine, type Engine, type EngineStats } from "@sealight/engine";
 import type { Mood } from "@/scene/stage";
 import type { Stage } from "@/scene/useStage";
+import { qualityFromSetting, type GraphicsSetting } from "./graphics";
 import { createHomeScene, type HomeScene, type HomeState } from "./homeScene";
+import { PATTERNS } from "./materials";
 
 type HomeViewProps = {
   readonly stage: Stage;
   readonly mood: Mood;
   readonly hour: number;
-  readonly quality: "high" | "low";
+  readonly quality: GraphicsSetting;
   readonly onStats?: (stats: EngineStats) => void;
 };
 
@@ -24,7 +26,7 @@ const startEngine = (
   onFailure: (message: string) => void,
 ): Engine | null => {
   const scene = homeScene();
-  const created = createEngine({ canvas, quality, frame: (info) => scene.frame(info, read()), onStats });
+  const created = createEngine({ canvas, quality: qualityFromSetting(quality), patterns: PATTERNS, frame: (info) => scene.frame(info, read()), onStats });
   if (!created.ok) {
     onFailure(created.error);
     return null;

@@ -10,7 +10,7 @@ export const BOUNDS: Bounds = { min: [-10, -8], max: [9, 6] };
 /** 置き物の種類。見た目の作り方（props）と対応する */
 export type PropKind =
   | "house" | "garden" | "woodpile" | "barrels" | "well" | "lantern" | "bed" | "bowl" | "gate" | "pond"
-  | "signpost" | "crates" | "oak" | "pine" | "bush" | "rock" | "mushrooms" | "stump";
+  | "signpost" | "crates" | "oak" | "pine" | "bush" | "rock" | "mushrooms" | "stump" | "flagpole";
 
 export type HomePlacement = Placement & { readonly kind: PropKind };
 
@@ -46,6 +46,7 @@ export const HOME: readonly HomePlacement[] = [
   at("rock-2", "rock", [-4, 2]),
   at("mushrooms", "mushrooms", [2, 1]),
   at("stump", "stump", [-6, -2]),
+  at("flagpole", "flagpole", [-6, -5]),
 ];
 
 /** 寝床。モンスターが待つマス */

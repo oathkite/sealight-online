@@ -69,6 +69,16 @@ describe("environmentAt", () => {
     expect(environmentAt({ hour: 23, time: 3, anchors: [...anchors, ...anchors], waiting: true }).lights.length).toBeLessThanOrEqual(4);
   });
 
+  it("風は地面に沿った向きで吹き、強さはゆっくり変わり、夜は穏やか", () => {
+    const day = environmentAt({ hour: 13, time: 0, anchors, waiting: false }).wind;
+    const later = environmentAt({ hour: 13, time: 40, anchors, waiting: false }).wind;
+    const night = environmentAt({ hour: 2, time: 0, anchors, waiting: false }).wind;
+    expect(Math.hypot(...day.direction)).toBeCloseTo(1);
+    expect(day.strength).toBeGreaterThan(0.2);
+    expect(later.strength).not.toBe(day.strength);
+    expect(night.strength).toBeLessThan(day.strength);
+  });
+
   it("炎は時間とともにゆらめく", () => {
     const a = environmentAt({ hour: 13, time: 0.1, anchors, waiting: false }).glow[2];
     const b = environmentAt({ hour: 13, time: 0.37, anchors, waiting: false }).glow[2];

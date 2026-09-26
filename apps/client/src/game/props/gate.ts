@@ -32,7 +32,14 @@ export const buildGate = (s: Shapes): PropAnchors => {
   s.hull([[0, 0.2, 0], [0, -0.2, 0], [0.12, 0, 0], [-0.12, 0, 0], [0, 0, 0.09], [0, 0, -0.09]], [0, 2.18, -0.2], "rune", { material: MATERIAL.magic, round: 0.02 });
   torch(s, -0.95);
   torch(s, 0.95);
+  const across = s.place([1, 0, 0]);
+  const origin = s.place([0, 0, 0]);
   return {
+    cloths: [{
+      spec: { origin: s.place([-0.36, 2.0, -0.2]), across: [across[0] - origin[0], across[1] - origin[1], across[2] - origin[2]], down: [0, -1, 0], width: 0.72, height: 0.62, cols: 7, rows: 8 },
+      color: "banner",
+      pattern: "banner",
+    }],
     lights: [
       { kind: "flame", position: s.place([-0.95, 1.6, 0.05]) },
       { kind: "magic", position: s.place([0, 0.35, 0.55]) },

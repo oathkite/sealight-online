@@ -9,9 +9,9 @@ export const buildGarden = (s: Shapes): PropAnchors => {
   s.box([0, -0.03, 0], [3.4, 0.1, 2.5], "soil", { round: 0.05 });
   [-0.8, 0, 0.8].forEach((z, row) => {
     s.box([0, 0.03, z], [3.1, 0.14, 0.46], "soil_light", { round: 0.07 });
-    if (row === 0) for (let i = 0; i < 5; i += 1) { s.ball([-1.2 + i * 0.6, 0.3, z], [0.22, 0.17, 0.22], "cabbage", { material: MATERIAL.foliage }); s.ball([-1.2 + i * 0.6, 0.42, z], [0.1, 0.08, 0.1], "sprout", { material: MATERIAL.foliage }); }
+    if (row === 0) for (let i = 0; i < 5; i += 1) { s.ball([-1.2 + i * 0.6, 0.3, z], [0.22, 0.17, 0.22], "cabbage", { material: MATERIAL.foliage, sway: [0.03, 0.03] }); s.ball([-1.2 + i * 0.6, 0.42, z], [0.1, 0.08, 0.1], "sprout", { material: MATERIAL.foliage, sway: [0.04, 0.04] }); }
     if (row === 1) for (const x of [-1.0, 0.05, 1.05]) { s.ball([x, 0.36, z], [0.27, 0.21, 0.27], "pumpkin"); s.cylinder([x, 0.52, z], 0.035, 0.025, 0.12, "sprout"); }
-    if (row === 2) for (let i = 0; i < 6; i += 1) for (const dx of [-0.05, 0.05]) s.cylinder([-1.25 + i * 0.5 + dx, 0.14, z], 0.05, 0, 0.3, "sprout", { material: MATERIAL.foliage, rotation: rotationZ(dx * 5) });
+    if (row === 2) for (let i = 0; i < 6; i += 1) for (const dx of [-0.05, 0.05]) s.cylinder([-1.25 + i * 0.5 + dx, 0.14, z], 0.05, 0, 0.3, "sprout", { material: MATERIAL.foliage, rotation: rotationZ(dx * 5), sway: [0, 0.35] });
   });
   const posts: (readonly [number, number])[] = [];
   for (let i = 0; i <= 4; i += 1) posts.push([-1.85 + i * 0.925, -1.4]);
@@ -106,4 +106,20 @@ export const buildStump = (s: Shapes): PropAnchors => {
   s.box([0.05, 0.32, 0], [0.05, 0.5, 0.05], "wood_light", { round: 0.02, rotation: rotationZ(-0.5) });
   s.box([-0.05, 0.3, 0], [0.18, 0.12, 0.04], "iron", { round: 0.02, rotation: rotationZ(-0.5) });
   return NONE;
+};
+
+/** 旗竿。てっぺんの旗が風になびく */
+export const buildFlagpole = (s: Shapes): PropAnchors => {
+  s.cylinder([0, 0, 0], 0.13, 0.11, 0.18, "stone", { round: 0.04 });
+  s.cylinder([0, 0.1, 0], 0.05, 0.04, 3.0, "wood_dark", { round: 0.02 });
+  s.ball([0, 3.14, 0], [0.07, 0.07, 0.07], "iron", { material: MATERIAL.gloss });
+  const origin = s.place([0.04, 3.0, 0]);
+  const out = s.place([1.04, 3.0, 0]);
+  return {
+    cloths: [{
+      spec: { origin, across: [0, -1, 0], down: [out[0] - origin[0], out[1] - origin[1], out[2] - origin[2]], width: 0.5, height: 0.85, cols: 5, rows: 9 },
+      color: "banner",
+      pattern: "banner",
+    }],
+  };
 };
