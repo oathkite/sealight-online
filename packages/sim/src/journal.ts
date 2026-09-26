@@ -98,19 +98,22 @@ const addFoe = (row: Draft, foe: Extract<ExpeditionEvent, { type: "encounter" }>
   if (foe.rare) row.rare = true;
 };
 
-/** 置いてきた装備は、拾った記録に印を付ける（拾った記録がなければ足す） */
-const markDropped = (row: Draft, e: Extract<ExpeditionEvent, { type: "bagFull" }>): void => {
-  const index = row.loot.findIndex((l) => l.loot.type === "item" && l.loot.item.id === e.item.id);
-  const existing = row.loot[index];
-  if (existing) row.loot[index] = { ...existing, dropped: true };
-  else row.loot.push({ source: e.source, loot: { type: "item", item: e.item }, dropped: true });
+/** 置いてきた装備は、拾った記録に印を付ける。前の階で拾った物も探し、拾った記録がなければ今の行に足す */
+const markDropped = (rows: Draft[], row: Draft, e: Extract<ExpeditionEvent, { type: "bagFull" }>): void => {
+  for (const r of rows) {
+    const index = r.loot.findIndex((l) => l.loot.type === "item" && l.loot.item.id === e.item.id);
+    const existing = r.loot[index];
+    if (!existing) continue;
+    r.loot[index] = { ...existing, dropped: true };
+    return;
+  }
+  row.loot.push({ source: e.source, loot: { type: "item", item: e.item }, dropped: true });
 };
 
 const applyToRow = (row: Draft, e: ExpeditionEvent): void => {
   if ("t" in e) row.endT = e.t;
   if (e.type === "encounter") addFoe(row, e.foe);
   if (e.type === "loot") row.loot.push({ source: e.source, loot: e.loot, dropped: false });
-  if (e.type === "bagFull") markDropped(row, e);
   if (e.type === "starving") row.starving = true;
   if (e.type === "turnaround") row.turnaround = true;
   if (e.type === "death") {
@@ -134,6 +137,7 @@ const buildRows = (events: readonly ExpeditionEvent[], maxHp: number): readonly 
     const current = rows.at(-1);
     if (!current) continue;
     applyToRow(current, e);
+    if (e.type === "bagFull") markDropped(rows, current, e);
     if (e.type === "home") current.hp = e.hp;
   }
   return rows.map((r) => ({ ...r, hearts: heartsOf(r.hp, maxHp), mood: moodOf(r.hp, maxHp) }));

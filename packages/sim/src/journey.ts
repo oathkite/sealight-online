@@ -1,3 +1,4 @@
+import { stow } from "./bag";
 import { swarmSize, type Foe } from "./catalog";
 import { resolveBattle, type Combatant } from "./combat";
 import {
@@ -19,6 +20,8 @@ type JourneyState = {
   readonly rng: Rng;
   readonly events: ExpeditionEvent[];
   readonly items: Equipment[];
+  /** 荷物の装備をどこで拾ったか。入れ替えで置いてくるときの記録に使う */
+  readonly sources: Map<string, LootSource>;
   me: Combatant;
   t: number;
   xp: number;
@@ -39,6 +42,7 @@ const initialState = (input: ExpeditionInput, rng: Rng): JourneyState => {
     rng,
     events: [],
     items: [],
+    sources: new Map(),
     me: { hp: maxHp, maxHp, attack: attackFor(stats, weapon), defense: defenseFor(stats, armor), potions },
     t: 0,
     xp: 0,
@@ -77,13 +81,12 @@ const digest = (s: JourneyState, depth: number): void => {
   if (s.me.hp === 0) die(s, depth, "hunger");
 };
 
-/** 荷物に入れる。食料と装備で枠を分け合い、いっぱいなら置いてくる */
+/** 荷物に入れる。食料と装備で枠を分け合い、いっぱいなら弱い方の装備を置いてくる */
 const pick = (s: JourneyState, depth: number, source: LootSource, item: Equipment): void => {
-  if (s.items.length + s.rations >= PACE.bagCapacity) {
-    s.events.push({ type: "bagFull", t: s.t, depth, source, item });
-    return;
-  }
-  s.items.push(item);
+  const { bag, left } = stow(s.items, item, PACE.bagCapacity - s.items.length - s.rations);
+  s.items.splice(0, s.items.length, ...bag);
+  s.sources.set(item.id, source);
+  if (left) s.events.push({ type: "bagFull", t: s.t, depth, source: s.sources.get(left.id) ?? source, item: left });
 };
 
 const lootContext = (s: JourneyState, depth: number, rareBonus = 0) => ({

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { simulateExpedition } from "./expedition";
-import type { ExpeditionInput, ExpeditionLoadout } from "./expedition-types";
+import type { ExpeditionInput, ExpeditionLoadout, LootSource } from "./expedition-types";
 import { generateFloor } from "./floor";
 import { toIndex } from "./path";
 
@@ -94,6 +94,24 @@ describe("simulateExpedition", () => {
     const result = simulateExpedition(input({ target: 5, loadout: full }));
     const dropped = result.events.filter((e) => e.type === "bagFull");
     expect(dropped.length).toBeGreaterThan(0);
+  });
+
+  it("いっぱいで強い物を拾ったら前に拾った弱い物と入れ替え、置いてきた物には拾った場所を残す", () => {
+    const tight = { ...strong, rations: 8, stats: { ...strong.stats, luk: 30 } };
+    const { events } = simulateExpedition(input({ target: 8, loadout: tight }));
+    const found = new Map<string, LootSource>();
+    let swapped = 0;
+    let latest = "";
+    for (const e of events) {
+      if (e.type === "loot" && e.loot.type === "item") {
+        found.set(e.loot.item.id, e.source);
+        latest = e.loot.item.id;
+      }
+      if (e.type !== "bagFull") continue;
+      expect(e.source).toBe(found.get(e.item.id));
+      if (e.item.id !== latest) swapped += 1;
+    }
+    expect(swapped).toBeGreaterThan(0);
   });
 
   it("持ち帰る装備の ID は一意", () => {

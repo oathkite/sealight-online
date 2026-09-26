@@ -110,6 +110,23 @@ describe("buildJournal", () => {
   });
 });
 
+describe("荷物の入れ替え", () => {
+  it("前の階で拾った装備を後の階で置いてきたら、拾った階の記録に印を付け、新しい行は足さない", () => {
+    const rows = buildJournal(
+      [
+        { type: "floor", t: 0, depth: 1, direction: "down", hp: 30, rations: 0 },
+        { type: "loot", t: 5, depth: 1, source: "chest", loot: { type: "item", item: sword } },
+        { type: "floor", t: 10, depth: 2, direction: "down", hp: 30, rations: 0 },
+        { type: "bagFull", t: 15, depth: 2, source: "drop", item: sword },
+        { type: "home", t: 30, hp: 29 },
+      ],
+      { maxHp: 40, status: "returned" },
+    ).rows;
+    expect(rows[0]?.loot).toEqual([{ source: "chest", loot: { type: "item", item: sword }, dropped: true }]);
+    expect(rows[1]?.loot).toEqual([]);
+  });
+});
+
 describe("戦いの記録とポーション", () => {
   it("戦いの中で飲んだポーションの数を残す（受けたダメージが戦う前の HP を超える理由が分かる）", () => {
     const journal = buildJournal(
